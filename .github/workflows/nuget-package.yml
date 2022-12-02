@@ -84,6 +84,15 @@ jobs:
             Compress-Archive -Path "$WtDir/*" -CompressionLevel Optimal -DestinationPath "./package/${ZipFile}"
           }
 
+      - name: Code sign zip package
+        shell: pwsh
+        run: |
+          Install-Module -Name Devolutions.Authenticode -Force
+          $TimestampServer = 'http://timestamp.digicert.com'
+          $Certificate = Get-ChildItem cert:\CurrentUser\My -CodeSigning | Select-Object -First 1
+          Set-ZipAuthenticodeSignature -Certificate $Certificate -TimestampServer $TimestampServer "./package/*.zip"
+          Remove-Item ./package/*.sig.ps1
+
       - name: Build nuget package
         shell: pwsh
         run: |
@@ -97,7 +106,7 @@ jobs:
           name: WindowsTerminal-zip
           path: package/*.zip
 
-      - name: Upload Nuget Package
+      - name: Upload nuget Package
         uses: actions/upload-artifact@v3
         with:
           name: WindowsTerminal-nupkg
