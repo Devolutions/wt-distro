@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Content Include="$(MSBuildThisFileDirectory)\..\runtimes\win-x64\native\wt\**\*">
+      <Link>runtimes\win-x64\native\wt\%(RecursiveDir)/%(FileName)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <PublishState>Included</PublishState>
+      <Visible>false</Visible>
+      <Pack>false</Pack>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)\..\runtimes\win-arm64\native\wt\**\*">
+      <Link>runtimes\win-arm64\native\wt\%(RecursiveDir)/%(FileName)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <PublishState>Included</PublishState>
+      <Visible>false</Visible>
+      <Pack>false</Pack>
+    </Content>
+  </ItemGroup>
+</Project>

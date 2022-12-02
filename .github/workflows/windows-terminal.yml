@@ -1,0 +1,71 @@
+name: Windows Terminal
+on: workflow_dispatch
+jobs:
+  build:
+    name: Windows Terminal [${{matrix.arch}}]
+    runs-on: ${{matrix.runner}}
+    strategy:
+      fail-fast: true
+      matrix:
+        arch: [ x64, arm64 ]
+        os: [ windows ]
+        version: [ 1.16.2641.0 ]
+
+        include:
+          - os: windows
+            runner: windows-2022
+  
+    steps:
+      - name: Clone project
+        uses: actions/checkout@v3
+
+      - name: Clone Windows Terminal ${{matrix.version}}
+        uses: actions/checkout@v3
+        with:
+          repository: microsoft/terminal
+          ref: v${{matrix.version}}
+          submodules: true
+          path: WindowsTerminal
+
+      - name: Patch Windows Terminal
+        shell: pwsh
+        run: |
+          git -C WindowsTerminal apply ../patches/add-wt-base-settings-path-env-var.patch --ignore-whitespace
+          git -C WindowsTerminal apply ../patches/add-wt-parent-window-handle-env-var.patch --ignore-whitespace
+
+      - name: Configure Windows Runner
+        shell: pwsh
+        run: |
+          docker system prune -a -f
+          New-Item "C:\workspace" -ItemType Directory
+          Move-Item ".\WindowsTerminal" "C:\workspace" -Force
+
+      - name: Build Windows Terminal
+        shell: pwsh
+        working-directory: C:\workspace\WindowsTerminal
+        run: |
+          $TargetPlatform="${{matrix.arch}}"
+          Import-Module .\tools\OpenConsole.psm1
+          Set-MsBuildDevEnvironment
+          Invoke-OpenConsoleBuild /property:Configuration=Release /p:Platform=$TargetPlatform /p:AppxSymbolPackageEnabled=false /t:Terminal\CascadiaPackage /m
+
+      - name: Package Windows Terminal
+        shell: pwsh
+        working-directory: C:\workspace\WindowsTerminal
+        run: |
+          $TargetPlatform="${{matrix.arch}}"
+          $PackageVersion = "${{matrix.version}}"
+          $PackageName = "WindowsTerminal-${PackageVersion}-${TargetPlatform}"
+          Import-Module .\tools\OpenConsole.psm1
+          Set-MsBuildDevEnvironment
+          $MsixPackage = Get-Item ".\src\cascadia\CascadiaPackage\AppPackages\CascadiaPackage_*_${TargetPlatform}_Test\CascadiaPackage_*_${TargetPlatform}.msix"
+          Remove-Item ".\output\${PackageName}" -Recurse -ErrorAction SilentlyContinue
+          New-Item ".\output\${PackageName}" -Type Directory -Force | Out-Null
+          & makeappx unpack /v /o /p $MsixPackage.FullName /d ".\output\${PackageName}"
+          Compress-Archive ".\output\${PackageName}\*" -DestinationPath "C:\workspace\${PackageName}.zip" -CompressionLevel Optimal
+
+      - name: Upload Windows Terminal package
+        uses: actions/upload-artifact@v3
+        with:
+          name: WindowsTerminal-${{matrix.version}}-${{matrix.arch}}
+          path: C:\workspace\WindowsTerminal-${{matrix.version}}-${{matrix.arch}}.zip

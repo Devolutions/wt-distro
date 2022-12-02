@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk" DefaultTargets="Pack">
+
+  <PropertyGroup>
+    <Version>1.0.0.0</Version>
+    <Company>Devolutions</Company>
+    <Authors>Devolutions</Authors>
+    <Description>Windows Terminal</Description>
+    <PackageId>Devolutions.WindowsTerminal</PackageId>
+    <PackageTags>Windows;Terminal;WindowsTerminal;WT</PackageTags>
+    <Description>Devolutions Windows Terminal distribution</Description>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <NoBuild>true</NoBuild>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <IncludeSymbols>false</IncludeSymbols>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackFrameworkReferences>false</PackFrameworkReferences>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="$(MSBuildThisFileDirectory)\..\..\runtimes\win-x64\native\wt\**\*" Pack="true">
+      <PackagePath>runtimes\win-x64\native\wt\%(RecursiveDir)/%(FileName)%(Extension)</PackagePath>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)\..\..\runtimes\win-arm64\native\wt\**\*" Pack="true">
+      <PackagePath>runtimes\win-arm64\native\wt\%(RecursiveDir)/%(FileName)%(Extension)</PackagePath>
+    </Content>
+    <Content Include="Devolutions.WindowsTerminal.targets" PackagePath="build/Devolutions.WindowsTerminal.targets" Pack="true" />
+  </ItemGroup>
+
+</Project>

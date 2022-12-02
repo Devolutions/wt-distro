@@ -1,0 +1,61 @@
+name: Nuget Package
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: 'workflow run id'
+        default: "latest"
+        required: true
+      rev_id:
+        description: 'build revision id'
+        default: "0"
+        required: true
+
+jobs:
+  package:
+    runs-on: windows-2022
+    
+    steps:
+      - name: Clone project
+        uses: actions/checkout@v3
+
+      - name: Download Windows Terminal
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $RunId = '${{ github.event.inputs.run_id }}'
+          if ($RunId -eq 'latest') {
+            $RunId = $(gh run list -w 'Windows Terminal' --json 'status,databaseId') |
+              ConvertFrom-Json | Where-Object { $_.status -eq 'completed' } |
+              Select-Object -First 1 -ExpandProperty databaseId
+          }
+          Write-Host "Downloading run $RunId"
+          & gh run download $RunId
+          Get-ChildItem */*.zip | ForEach-Object {
+            if ($_.BaseName -Match "WindowsTerminal-(\d+.\d+.\d+.\d+)-(.*)") {
+              $Version = $Matches[1]
+              $Architecture = $Matches[2]
+              $Destination = "runtimes/win-${Architecture}/native/wt"
+              New-Item $Destination -ItemType Directory -Force | Out-Null
+              Expand-Archive $_.FullName $Destination
+              Remove-Item $_.FullName
+              Remove-Item $_.Directory -ErrorAction SilentlyContinue
+            }
+          }
+          $RevId = '${{ github.event.inputs.rev_id }}'
+          $Version -Replace "(\d+).(\d+).(\d+).(\d+)", "`$1.`$2.`$3.$RevId"
+          Set-Content -Path .\VERSION -Value $Version -NoNewLine -Force
+
+      - name: Build Nuget Package
+        shell: pwsh
+        run: |
+          $Version = Get-Content -Path .\VERSION
+          Write-Host "Package Version: $Version"
+          dotnet pack .\dotnet\Devolutions.WindowsTerminal -c Release -o package /p:Version=$Version
+
+      - name: Upload Nuget Package
+        uses: actions/upload-artifact@v3
+        with:
+          name: WindowsTerminal-nupkg
+          path: package/*.nupkg
