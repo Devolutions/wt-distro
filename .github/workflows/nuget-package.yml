@@ -47,12 +47,55 @@ jobs:
           $Version -Replace "(\d+).(\d+).(\d+).(\d+)", "`$1.`$2.`$3.$RevId"
           Set-Content -Path .\VERSION -Value $Version -NoNewLine -Force
 
-      - name: Build Nuget Package
+      - name: Import code signing certificate
+        shell: pwsh
+        run: |
+          $AuthenticodePath = "~\Documents\Authenticode"
+          New-Item -ItemType Directory -Path $AuthenticodePath -ErrorAction SilentlyContinue | Out-Null
+          $TestCertsUrl = "https://raw.githubusercontent.com/Devolutions/devolutions-authenticode/master/data/certs"
+          @('authenticode-test-ca.crt','authenticode-test-cert.pfx') | ForEach-Object {
+              Invoke-WebRequest -Uri "$TestCertsUrl/$_" -OutFile $AuthenticodePath\$_
+          }
+          Import-Certificate -FilePath "$AuthenticodePath\authenticode-test-ca.crt" -CertStoreLocation "cert:\LocalMachine\Root"
+          $CodeSignPassword = ConvertTo-SecureString "CodeSign123!" -AsPlainText -Force
+          Import-PfxCertificate -FilePath "$AuthenticodePath\authenticode-test-cert.pfx" -CertStoreLocation 'cert:\CurrentUser\My' -Password $CodeSignPassword
+
+      - name: Code sign Windows Terminal
+        shell: pwsh
+        run: |
+          $TimestampServer = 'http://timestamp.digicert.com'
+          $Certificate = Get-ChildItem cert:\CurrentUser\My -CodeSigning | Select-Object -First 1
+          foreach ($Architecture in @('x64', 'arm64')) {
+            $WtDir = "runtimes/win-${Architecture}/native/wt"
+            Get-ChildItem -Path "$WtDir/*" -Include @("*.exe","*.dll") -Exclude @("*.Xaml*.dll") | ForEach-Object {
+              Set-AuthenticodeSignature -Certificate $Certificate -TimestampServer $TimestampServer $_
+            }
+          }
+
+      - name: Build zip package
+        shell: pwsh
+        run: |
+          $Version = Get-Content -Path .\VERSION
+          Write-Host "Package Version: $Version"
+          New-Item -Path "./package" -ItemType Directory -Force | Out-Null
+          foreach ($Architecture in @('x64', 'arm64')) {
+            $WtDir = "runtimes/win-${Architecture}/native/wt"
+            $ZipFile = "WindowsTerminal-${Version}-${Architecture}.zip"
+            Compress-Archive -Path "$WtDir/*" -CompressionLevel Optimal -DestinationPath "./package/${ZipFile}"
+          }
+
+      - name: Build nuget package
         shell: pwsh
         run: |
           $Version = Get-Content -Path .\VERSION
           Write-Host "Package Version: $Version"
           dotnet pack .\dotnet\Devolutions.WindowsTerminal -c Release -o package /p:Version=$Version
+
+      - name: Upload zip package
+        uses: actions/upload-artifact@v3
+        with:
+          name: WindowsTerminal-zip
+          path: package/*.zip
 
       - name: Upload Nuget Package
         uses: actions/upload-artifact@v3
