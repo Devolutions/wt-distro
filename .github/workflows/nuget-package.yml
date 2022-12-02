@@ -19,6 +19,23 @@ jobs:
       - name: Clone project
         uses: actions/checkout@v3
 
+      - name: Import code signing certificate
+        shell: pwsh
+        run: |
+          $AuthenticodePath = "~\Documents\Authenticode"
+          New-Item -ItemType Directory -Path $AuthenticodePath -ErrorAction SilentlyContinue | Out-Null
+          $TestCertsUrl = "https://raw.githubusercontent.com/Devolutions/devolutions-authenticode/master/data/certs"
+          @('authenticode-test-ca.crt','authenticode-test-cert.pfx') | ForEach-Object {
+              Invoke-WebRequest -Uri "$TestCertsUrl/$_" -OutFile $AuthenticodePath\$_
+          }
+          Import-Certificate -FilePath "$AuthenticodePath\authenticode-test-ca.crt" -CertStoreLocation "cert:\LocalMachine\Root"
+          $CodeSignPassword = ConvertTo-SecureString "CodeSign123!" -AsPlainText -Force
+          Import-PfxCertificate -FilePath "$AuthenticodePath\authenticode-test-cert.pfx" -CertStoreLocation 'cert:\CurrentUser\My' -Password $CodeSignPassword
+
+          $CodesignThumbprint = Get-ChildItem cert:\CurrentUser\My -CodeSigning | Select-Object -First 1 -ExpandProperty Thumbprint
+          echo "CODESIGN_THUMBPRINT=$CodesignThumbprint" >> $Env:GITHUB_ENV
+          echo "TIMESTAMP_SERVER=http://timestamp.digicert.com" >> $Env:GITHUB_ENV
+
       - name: Download Windows Terminal
         shell: pwsh
         env:
@@ -47,24 +64,11 @@ jobs:
           $Version -Replace "(\d+).(\d+).(\d+).(\d+)", "`$1.`$2.`$3.$RevId"
           Set-Content -Path .\VERSION -Value $Version -NoNewLine -Force
 
-      - name: Import code signing certificate
-        shell: pwsh
-        run: |
-          $AuthenticodePath = "~\Documents\Authenticode"
-          New-Item -ItemType Directory -Path $AuthenticodePath -ErrorAction SilentlyContinue | Out-Null
-          $TestCertsUrl = "https://raw.githubusercontent.com/Devolutions/devolutions-authenticode/master/data/certs"
-          @('authenticode-test-ca.crt','authenticode-test-cert.pfx') | ForEach-Object {
-              Invoke-WebRequest -Uri "$TestCertsUrl/$_" -OutFile $AuthenticodePath\$_
-          }
-          Import-Certificate -FilePath "$AuthenticodePath\authenticode-test-ca.crt" -CertStoreLocation "cert:\LocalMachine\Root"
-          $CodeSignPassword = ConvertTo-SecureString "CodeSign123!" -AsPlainText -Force
-          Import-PfxCertificate -FilePath "$AuthenticodePath\authenticode-test-cert.pfx" -CertStoreLocation 'cert:\CurrentUser\My' -Password $CodeSignPassword
-
       - name: Code sign Windows Terminal
         shell: pwsh
         run: |
-          $TimestampServer = 'http://timestamp.digicert.com'
-          $Certificate = Get-ChildItem cert:\CurrentUser\My -CodeSigning | Select-Object -First 1
+          $TimestampServer = $Env:TIMESTAMP_SERVER
+          $Certificate = Get-Item cert:\CurrentUser\My\$Env:CODESIGN_THUMBPRINT
           foreach ($Architecture in @('x64', 'arm64')) {
             $WtDir = "runtimes/win-${Architecture}/native/wt"
             Get-ChildItem -Path "$WtDir/*" -Include @("*.exe","*.dll") -Exclude @("*.Xaml*.dll") | ForEach-Object {
@@ -87,9 +91,9 @@ jobs:
       - name: Code sign zip package
         shell: pwsh
         run: |
+          $TimestampServer = $Env:TIMESTAMP_SERVER
+          $Certificate = Get-Item cert:\CurrentUser\My\$Env:CODESIGN_THUMBPRINT
           Install-Module -Name Devolutions.Authenticode -Force
-          $TimestampServer = 'http://timestamp.digicert.com'
-          $Certificate = Get-ChildItem cert:\CurrentUser\My -CodeSigning | Select-Object -First 1
           Set-ZipAuthenticodeSignature -Certificate $Certificate -TimestampServer $TimestampServer "./package/*.zip"
           Remove-Item ./package/*.sig.ps1
 
@@ -100,14 +104,8 @@ jobs:
           Write-Host "Package Version: $Version"
           dotnet pack .\dotnet\Devolutions.WindowsTerminal -c Release -o package /p:Version=$Version
 
-      - name: Upload zip package
+      - name: Upload packages
         uses: actions/upload-artifact@v3
         with:
-          name: WindowsTerminal-zip
-          path: package/*.zip
-
-      - name: Upload nuget Package
-        uses: actions/upload-artifact@v3
-        with:
-          name: WindowsTerminal-nupkg
-          path: package/*.nupkg
+          name: WindowsTerminal
+          path: package/*
