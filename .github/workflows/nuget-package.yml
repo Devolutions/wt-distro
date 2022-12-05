@@ -10,6 +10,15 @@ on:
         description: 'build revision id'
         default: "0"
         required: true
+      codesign:
+        description: 'Code signing'
+        required: true
+        default: 'test'
+        type: choice
+        options:
+        - test
+        - prod
+        - none
 
 jobs:
   package:
@@ -18,6 +27,24 @@ jobs:
     steps:
       - name: Clone project
         uses: actions/checkout@v3
+
+      - name: Import code signing certificate
+        if:  ${{ inputs.codesign == 'test' }} 
+        shell: pwsh
+        run: |
+          $AuthenticodePath = "~\Documents\Authenticode"
+          New-Item -ItemType Directory -Path $AuthenticodePath -ErrorAction SilentlyContinue | Out-Null
+          $TestCertsUrl = "https://raw.githubusercontent.com/Devolutions/devolutions-authenticode/master/data/certs"
+          @('authenticode-test-ca.crt','authenticode-test-cert.pfx') | ForEach-Object {
+              Invoke-WebRequest -Uri "$TestCertsUrl/$_" -OutFile $AuthenticodePath\$_
+          }
+          Import-Certificate -FilePath "$AuthenticodePath\authenticode-test-ca.crt" -CertStoreLocation "cert:\LocalMachine\Root"
+          $CodeSignPassword = ConvertTo-SecureString "CodeSign123!" -AsPlainText -Force
+          Import-PfxCertificate -FilePath "$AuthenticodePath\authenticode-test-cert.pfx" -CertStoreLocation 'cert:\CurrentUser\My' -Password $CodeSignPassword
+
+          $CodesignThumbprint = Get-ChildItem cert:\CurrentUser\My -CodeSigning | Select-Object -First 1 -ExpandProperty Thumbprint
+          echo "CODESIGN_THUMBPRINT=$CodesignThumbprint" >> $Env:GITHUB_ENV
+          echo "TIMESTAMP_SERVER=http://timestamp.digicert.com" >> $Env:GITHUB_ENV
 
       - name: Download Windows Terminal
         shell: pwsh
@@ -47,15 +74,50 @@ jobs:
           $Version -Replace "(\d+).(\d+).(\d+).(\d+)", "`$1.`$2.`$3.$RevId"
           Set-Content -Path .\VERSION -Value $Version -NoNewLine -Force
 
-      - name: Build Nuget Package
+      - name: Code sign Windows Terminal
+        if: ${{ env.CODESIGN_THUMBPRINT }}
+        shell: pwsh
+        run: |
+          $TimestampServer = $Env:TIMESTAMP_SERVER
+          $Certificate = Get-Item cert:\CurrentUser\My\$Env:CODESIGN_THUMBPRINT
+          foreach ($Architecture in @('x64', 'arm64')) {
+            $WtDir = "runtimes/win-${Architecture}/native/wt"
+            Get-ChildItem -Path "$WtDir/*" -Include @("*.exe","*.dll") -Exclude @("*.Xaml*.dll") | ForEach-Object {
+              Set-AuthenticodeSignature -Certificate $Certificate -TimestampServer $TimestampServer $_
+            }
+          }
+
+      - name: Build zip package
+        shell: pwsh
+        run: |
+          $Version = Get-Content -Path .\VERSION
+          Write-Host "Package Version: $Version"
+          New-Item -Path "./package" -ItemType Directory -Force | Out-Null
+          foreach ($Architecture in @('x64', 'arm64')) {
+            $WtDir = "runtimes/win-${Architecture}/native/wt"
+            $ZipFile = "WindowsTerminal-${Version}-${Architecture}.zip"
+            Compress-Archive -Path "$WtDir/*" -CompressionLevel Optimal -DestinationPath "./package/${ZipFile}"
+          }
+
+      - name: Code sign zip package
+        if: ${{ env.CODESIGN_THUMBPRINT }}
+        shell: pwsh
+        run: |
+          $TimestampServer = $Env:TIMESTAMP_SERVER
+          $Certificate = Get-Item cert:\CurrentUser\My\$Env:CODESIGN_THUMBPRINT
+          Install-Module -Name Devolutions.Authenticode -Force
+          Set-ZipAuthenticodeSignature -Certificate $Certificate -TimestampServer $TimestampServer "./package/*.zip"
+          Remove-Item ./package/*.sig.ps1
+
+      - name: Build nuget package
         shell: pwsh
         run: |
           $Version = Get-Content -Path .\VERSION
           Write-Host "Package Version: $Version"
           dotnet pack .\dotnet\Devolutions.WindowsTerminal -c Release -o package /p:Version=$Version
 
-      - name: Upload Nuget Package
+      - name: Upload packages
         uses: actions/upload-artifact@v3
         with:
-          name: WindowsTerminal-nupkg
-          path: package/*.nupkg
+          name: WindowsTerminal
+          path: package/*
