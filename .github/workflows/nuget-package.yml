@@ -65,6 +65,7 @@ jobs:
           Set-Content -Path .\VERSION -Value $Version -NoNewLine -Force
 
       - name: Code sign Windows Terminal
+        if: ${{ env.CODESIGN_THUMBPRINT }}
         shell: pwsh
         run: |
           $TimestampServer = $Env:TIMESTAMP_SERVER
@@ -89,6 +90,7 @@ jobs:
           }
 
       - name: Code sign zip package
+        if: ${{ env.CODESIGN_THUMBPRINT }}
         shell: pwsh
         run: |
           $TimestampServer = $Env:TIMESTAMP_SERVER
