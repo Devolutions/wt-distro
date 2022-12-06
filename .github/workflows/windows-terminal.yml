@@ -29,15 +29,18 @@ jobs:
 
       - name: Patch Windows Terminal
         shell: pwsh
-        run: |
-          git -C WindowsTerminal apply ../patches/add-wt-base-settings-path-env-var.patch --ignore-whitespace
-          git -C WindowsTerminal apply ../patches/add-wt-parent-window-handle-env-var.patch --ignore-whitespace
-          git -C WindowsTerminal apply ../patches/fix-wt-release-manifest-proxy-stub-clsids.patch --ignore-whitespace
+        working-directory: WindowsTerminal
+        run: |          
+          git apply ../patches/add-wt-base-settings-path-env-var.patch --ignore-whitespace
+          git apply ../patches/add-wt-parent-window-handle-env-var.patch --ignore-whitespace
+          git apply ../patches/fix-wt-release-manifest-proxy-stub-clsids.patch --ignore-whitespace
 
-          Set-Location "WindowsTerminal"
+          ..\scripts\SetVersionInfo.ps1 (Get-Location).Path "${{matrix.version}}"
+          
           Copy-Item "..\patches\resources\terminal.ico" ".\res\terminal\images\terminal.ico"
           Copy-Item "..\patches\resources\terminal_contrast-black.ico" ".\res\terminal\images\terminal_contrast-black.ico"
           Copy-Item "..\patches\resources\terminal_contrast-white.ico" ".\res\terminal\images\terminal_contrast-white.ico"
+          
           Remove-Item .\res\terminal\images-Dev -Recurse -Force
           Remove-Item .\res\terminal\images-Pre -Recurse -Force
           Copy-Item .\res\terminal\images .\res\terminal\images-Dev -Recurse -Force
