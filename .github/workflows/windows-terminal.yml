@@ -37,15 +37,15 @@ jobs:
           git apply ../patches/add-wt-version-rc-files-to-projects.patch --ignore-whitespace
 
           ..\scripts\SetVersionInfo.ps1 (Get-Location).Path "${{matrix.version}}"
-          
-          Copy-Item "..\patches\resources\terminal.ico" ".\res\terminal\images\terminal.ico"
-          Copy-Item "..\patches\resources\terminal_contrast-black.ico" ".\res\terminal\images\terminal_contrast-black.ico"
-          Copy-Item "..\patches\resources\terminal_contrast-white.ico" ".\res\terminal\images\terminal_contrast-white.ico"
-          
+
+          Copy-Item ..\patches\resources\images-rdm .\res\terminal -Recurse -Force
+          Copy-Item ..\patches\resources\images-rdm\terminal.ico .\res\terminal.ico -Force
+          Remove-Item .\res\terminal\images -Recurse -Force
           Remove-Item .\res\terminal\images-Dev -Recurse -Force
           Remove-Item .\res\terminal\images-Pre -Recurse -Force
-          Copy-Item .\res\terminal\images .\res\terminal\images-Dev -Recurse -Force
-          Copy-Item .\res\terminal\images .\res\terminal\images-Pre -Recurse -Force
+          Copy-Item .\res\terminal\images-rdm .\res\terminal\images -Recurse -Force
+          Copy-Item .\res\terminal\images-rdm .\res\terminal\images-Dev -Recurse -Force
+          Copy-Item .\res\terminal\images-rdm .\res\terminal\images-Pre -Recurse -Force
 
       - name: Configure Windows Runner
         shell: pwsh
