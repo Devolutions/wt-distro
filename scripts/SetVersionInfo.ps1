@@ -45,7 +45,7 @@ VS_VERSION_INFO VERSIONINFO
 BEGIN
     BLOCK "StringFileInfo"
     BEGIN
-        BLOCK "000004b0"
+        BLOCK "040904b0"
         BEGIN
             VALUE "CompanyName", "${CompanyName}"
             VALUE "FileDescription", "${FileDescription}"
@@ -59,7 +59,7 @@ BEGIN
     END
     BLOCK "VarFileInfo"
     BEGIN
-        VALUE "Translation", 0x0000, 1200
+        VALUE "Translation", 0x0409, 1200
     END
 END
 "@
