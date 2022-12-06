@@ -15,6 +15,19 @@ function New-VsVersionInfo
 		[string] $ProductVersion = ""
     )
 
+    # https://learn.microsoft.com/en-us/windows/win32/menurc/versioninfo-resource
+    # https://learn.microsoft.com/en-us/windows/win32/api/verrsrc/ns-verrsrc-vs_fixedfileinfo
+
+    $FileExtension = $OriginalFileName -Replace "(.*)\.(\w*)", "`$2"
+
+    if ($FileExtension -eq 'exe') {
+        $FileType = '0x1L' # VFT_APP
+    } elseif ($FileExtension -eq 'dll') {
+        $FileType = '0x2L' # VFT_DLL
+    } else {
+        $FileType = '0x0L' # VFT_UNKNOWN
+    }
+
 	@"
 #include <winresrc.h>
 VS_VERSION_INFO VERSIONINFO
@@ -27,12 +40,12 @@ VS_VERSION_INFO VERSIONINFO
     FILEFLAGS 0x0L
 #endif
     FILEOS 0x40004L
-    FILETYPE 0x1L
+    FILETYPE ${FileType}
     FILESUBTYPE 0x0L
 BEGIN
     BLOCK "StringFileInfo"
     BEGIN
-        BLOCK "040904b0"
+        BLOCK "000004b0"
         BEGIN
             VALUE "CompanyName", "${CompanyName}"
             VALUE "FileDescription", "${FileDescription}"
@@ -52,13 +65,15 @@ END
 "@
 }
 
-$ProductVersion = "1.16.2641.0"
+if ($args.count -lt 2) {
+    throw "insufficient arguments - <SourcePath> <ProductVersion>"
+}
 
-$FileName = "WindowsTerminal.exe"
+$SourcePath = $args[0]
+$ProductVersion = $args[1]
 
 $ProductName = "Windows Terminal"
 $CompanyName = "Devolutions Inc."
-$InternalName = $FileName -Replace "(.*)(\.\w*)", "`$1"
 $LegalCopyright = "Copyright $((Get-Date).Year), $CompanyName"
 $VsProductVersion = $ProductVersion -Replace "(\d*).(\d*).(\d*).(\d*)", "`$1,`$2,`$3,`$4"
 
@@ -75,12 +90,8 @@ $Params = @{
 	ProductVersion = $ProductVersion
 }
 
-New-VsVersionInfo @Params
-
-# elevate-shim.exe / src\cascadia\ElevateShim\elevate-shim.rc
 # OpenConsole.exe
 # TerminalAzBridge.exe
-# WindowsTerminal.exe / src\cascadia\WindowsTerminal\WindowsTerminal.rc
 # wtd.exe
 
 # OpenConsoleProxy.dll
@@ -93,3 +104,39 @@ New-VsVersionInfo @Params
 # Microsoft.Terminal.Remoting.dll
 # Microsoft.Terminal.Settings.Editor.dll
 # Microsoft.Terminal.Settings.Model.dll
+
+$VersionFiles = @{
+    "WindowsTerminal.exe" = "$SourcePath\src\cascadia\WindowsTerminal\WindowsTerminal.rc";
+    "elevate-shim.exe" = "$SourcePath\src\cascadia\ElevateShim\elevate-shim.rc";
+}
+
+$VersionFiles.GetEnumerator() | ForEach-Object {
+    $FileName = $_.Name
+    $RCFile = $_.Value
+
+    Write-Host "$FileName / $RCFile"
+
+    $InternalName = $FileName -Replace "(.*)(\.\w*)", "`$1"
+
+    $Params = @{
+        VsFileVersion = $VsProductVersion
+        VsProductVersion = $VsProductVersion
+        CompanyName = $CompanyName
+        FileDescription = $FileName
+        FileVersion = $ProductVersion
+        InternalName = $InternalName
+        LegalCopyright = $LegalCopyright
+        OriginalFilename = $FileName
+        ProductName = $ProductName
+        ProductVersion = $ProductVersion
+    }
+
+    $VersionInfo = New-VsVersionInfo @Params
+
+    if (-Not ((Get-Content $RCFile) | Select-String -Pattern '#include "version.rc"')) {
+        Add-Content -Path $RCFile -Value '#include "version.rc"'
+    }
+
+    $VersionRC = Join-Path (Get-Item $RCFile).Directory "version.rc"
+    Set-Content -Path $VersionRC -Value $VersionInfo -Force
+}
