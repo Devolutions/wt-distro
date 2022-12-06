@@ -34,6 +34,7 @@ jobs:
           git apply ../patches/add-wt-base-settings-path-env-var.patch --ignore-whitespace
           git apply ../patches/add-wt-parent-window-handle-env-var.patch --ignore-whitespace
           git apply ../patches/fix-wt-release-manifest-proxy-stub-clsids.patch --ignore-whitespace
+          git apply ../patches/add-wt-version-rc-files-to-projects.patch --ignore-whitespace
 
           ..\scripts\SetVersionInfo.ps1 (Get-Location).Path "${{matrix.version}}"
           
