@@ -32,6 +32,16 @@ jobs:
         run: |
           git -C WindowsTerminal apply ../patches/add-wt-base-settings-path-env-var.patch --ignore-whitespace
           git -C WindowsTerminal apply ../patches/add-wt-parent-window-handle-env-var.patch --ignore-whitespace
+          git -C WindowsTerminal apply ../patches/fix-wt-release-manifest-proxy-stub-clsids.patch --ignore-whitespace
+
+          Set-Location "WindowsTerminal"
+          Copy-Item "..\patches\resources\terminal.ico" ".\res\terminal\images\terminal.ico"
+          Copy-Item "..\patches\resources\terminal_contrast-black.ico" ".\res\terminal\images\terminal_contrast-black.ico"
+          Copy-Item "..\patches\resources\terminal_contrast-white.ico" ".\res\terminal\images\terminal_contrast-white.ico"
+          Remove-Item .\res\terminal\images-Dev -Recurse -Force
+          Remove-Item .\res\terminal\images-Pre -Recurse -Force
+          Copy-Item .\res\terminal\images .\res\terminal\images-Dev -Recurse -Force
+          Copy-Item .\res\terminal\images .\res\terminal\images-Pre -Recurse -Force
 
       - name: Configure Windows Runner
         shell: pwsh
@@ -47,7 +57,13 @@ jobs:
           $TargetPlatform="${{matrix.arch}}"
           Import-Module .\tools\OpenConsole.psm1
           Set-MsBuildDevEnvironment
-          Invoke-OpenConsoleBuild /property:Configuration=Release /p:Platform=$TargetPlatform /p:AppxSymbolPackageEnabled=false /t:Terminal\CascadiaPackage /m
+          $MSBuildOptions = @(
+            "/p:Configuration=Release",
+            "/p:Platform=$TargetPlatform",
+            "/p:WindowsTerminalBranding=Release",
+            "/t:Terminal\CascadiaPackage",
+            "/m")
+          Invoke-OpenConsoleBuild $MSBuildOptions
 
       - name: Package Windows Terminal
         shell: pwsh
