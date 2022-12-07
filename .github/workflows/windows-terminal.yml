@@ -82,6 +82,7 @@ jobs:
           Remove-Item ".\output\${PackageName}" -Recurse -ErrorAction SilentlyContinue
           New-Item ".\output\${PackageName}" -Type Directory -Force | Out-Null
           & makeappx unpack /v /o /p $MsixPackage.FullName /d ".\output\${PackageName}"
+          Remove-Item ".\output\${PackageName}\Images" -Recurse
           Compress-Archive ".\output\${PackageName}\*" -DestinationPath "C:\workspace\${PackageName}.zip" -CompressionLevel Optimal
 
       - name: Upload Windows Terminal package
