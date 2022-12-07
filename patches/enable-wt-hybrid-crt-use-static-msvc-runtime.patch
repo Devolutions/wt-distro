@@ -1,0 +1,133 @@
+From 89852602107fe28b756034b84aa52a1922e7f832 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marc-Andr=C3=A9=20Moreau?= <marcandre.moreau@gmail.com>
+Date: Wed, 7 Dec 2022 10:52:59 -0500
+Subject: [PATCH] Enable Hybrid CRT - use static MSVC runtime by default
+
+---
+ src/common.build.post.props       | 35 +++++++++++++++++++++++++
+ src/cppwinrt.build.pre.props      |  1 +
+ src/host/proxy/Host.Proxy.vcxproj | 43 +++++--------------------------
+ 3 files changed, 42 insertions(+), 37 deletions(-)
+
+diff --git a/src/common.build.post.props b/src/common.build.post.props
+index 17f210b0e..47024f72d 100644
+--- a/src/common.build.post.props
++++ b/src/common.build.post.props
+@@ -4,6 +4,41 @@
+     <Natvis Include="$(SolutionDir)tools\ConsoleTypes.natvis" />
+   </ItemGroup>
+ 
++  <!--
++    The Hybrid CRT model statically links the runtime and STL and dynamically
++    links the UCRT instead of the VC++ CRT. The UCRT ships with Windows.
++    WinAppSDK asserts that this is "supported according to the CRT maintainer."
++    This must come before Microsoft.Cpp.targets because it manipulates ClCompile.RuntimeLibrary.
++  -->
++  <ItemDefinitionGroup Condition="'$(EnableHybridCRT)'!='false' and '$(Configuration)'=='Debug'">
++    <ClCompile>
++      <!-- We use MultiThreadedDebug, rather than MultiThreadedDebugDLL, to avoid DLL dependencies on VCRUNTIME140d.dll and MSVCP140d.dll. -->
++      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
++    </ClCompile>
++    <Link>
++      <!-- Link statically against the runtime and STL, but link dynamically against the CRT by ignoring the static CRT
++           lib and instead linking against the Universal CRT DLL import library. This "hybrid" linking mechanism is
++           supported according to the CRT maintainer. Dynamic linking against the CRT makes the binaries a bit smaller
++           than they would otherwise be if the CRT, runtime, and STL were all statically linked in. -->
++      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries);libucrtd.lib</IgnoreSpecificDefaultLibraries>
++      <AdditionalOptions>%(AdditionalOptions) /defaultlib:ucrtd.lib</AdditionalOptions>
++    </Link>
++  </ItemDefinitionGroup>
++  <ItemDefinitionGroup Condition="'$(EnableHybridCRT)'!='false' and '$(Configuration)'=='Release'">
++    <ClCompile>
++      <!-- We use MultiThreaded, rather than MultiThreadedDLL, to avoid DLL dependencies on VCRUNTIME140.dll and MSVCP140.dll. -->
++      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
++    </ClCompile>
++    <Link>
++      <!-- Link statically against the runtime and STL, but link dynamically against the CRT by ignoring the static CRT
++           lib and instead linking against the Universal CRT DLL import library. This "hybrid" linking mechanism is
++           supported according to the CRT maintainer. Dynamic linking against the CRT makes the binaries a bit smaller
++           than they would otherwise be if the CRT, runtime, and STL were all statically linked in. -->
++      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries);libucrt.lib</IgnoreSpecificDefaultLibraries>
++      <AdditionalOptions>%(AdditionalOptions) /defaultlib:ucrt.lib</AdditionalOptions>
++    </Link>
++  </ItemDefinitionGroup>
++
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+ 
+   <ItemDefinitionGroup>
+diff --git a/src/cppwinrt.build.pre.props b/src/cppwinrt.build.pre.props
+index c83d1196b..d2b3ed29b 100644
+--- a/src/cppwinrt.build.pre.props
++++ b/src/cppwinrt.build.pre.props
+@@ -28,6 +28,7 @@
+     <AppContainerApplication>true</AppContainerApplication>
+     <WindowsStoreApp>true</WindowsStoreApp>
+     <ApplicationType>Windows Store</ApplicationType>
++    <UseCrtSDKReference>false</UseCrtSDKReference> <!-- The SDK reference breaks the Hybrid CRT -->
+   </PropertyGroup>
+   <PropertyGroup Condition="'$(OpenConsoleUniversalApp)'!='true'">
+     <!-- Some of our projects include the cppwinrt build options to
+diff --git a/src/host/proxy/Host.Proxy.vcxproj b/src/host/proxy/Host.Proxy.vcxproj
+index 137b1f1a8..be5a89fc6 100644
+--- a/src/host/proxy/Host.Proxy.vcxproj
++++ b/src/host/proxy/Host.Proxy.vcxproj
+@@ -17,6 +17,12 @@
+     regular builds, while preventing the build failure during fuzzing builds.
+     -->
+     <ConfigurationType Condition="'$(Configuration)'=='Fuzzing'">StaticLibrary</ConfigurationType>
++    <!--
++    OpenConsoleProxy gets copied out of our app package and into a shared system store. As such, it can't take a
++    dependency on any libraries inside our package **or** inside any of our dependency packages. It has to stand
++    on its own.
++    -->
++    <EnableHybridCRT>true</EnableHybridCRT>
+   </PropertyGroup>
+   <Import Project="$(SolutionDir)src\common.build.pre.props" />
+   <ItemGroup>
+@@ -77,43 +83,6 @@
+     </Link>
+   </ItemDefinitionGroup>
+ 
+-  <!--
+-    OpenConsoleProxy gets copied out of our app package and into a shared system store. As such, it can't take a
+-    dependency on any libraries inside our package **or** inside any of our dependency packages. It has to stand
+-    on its own.
+-    Therefore, we're going to use the Hybrid CRT model from WinAppSDK for only OpenConsoleProxy. It statically
+-    links the runtime and STL and dynamically links the UCRT instead of the VC++ CRT. The UCRT ships with Windows.
+-    WinAppSDK asserts that this is "supported according to the CRT maintainer."
+-  -->
+-  <ItemDefinitionGroup Condition="'$(Configuration)'=='Debug'">
+-    <ClCompile>
+-      <!-- We use MultiThreadedDebug, rather than MultiThreadedDebugDLL, to avoid DLL dependencies on VCRUNTIME140d.dll and MSVCP140d.dll. -->
+-      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+-    </ClCompile>
+-    <Link>
+-      <!-- Link statically against the runtime and STL, but link dynamically against the CRT by ignoring the static CRT
+-           lib and instead linking against the Universal CRT DLL import library. This "hybrid" linking mechanism is
+-           supported according to the CRT maintainer. Dynamic linking against the CRT makes the binaries a bit smaller
+-           than they would otherwise be if the CRT, runtime, and STL were all statically linked in. -->
+-      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries);libucrtd.lib</IgnoreSpecificDefaultLibraries>
+-      <AdditionalOptions>%(AdditionalOptions) /defaultlib:ucrtd.lib</AdditionalOptions>
+-    </Link>
+-  </ItemDefinitionGroup>
+-  <ItemDefinitionGroup Condition="'$(Configuration)'=='Release'">
+-    <ClCompile>
+-      <!-- We use MultiThreaded, rather than MultiThreadedDLL, to avoid DLL dependencies on VCRUNTIME140.dll and MSVCP140.dll. -->
+-      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+-    </ClCompile>
+-    <Link>
+-      <!-- Link statically against the runtime and STL, but link dynamically against the CRT by ignoring the static CRT
+-           lib and instead linking against the Universal CRT DLL import library. This "hybrid" linking mechanism is
+-           supported according to the CRT maintainer. Dynamic linking against the CRT makes the binaries a bit smaller
+-           than they would otherwise be if the CRT, runtime, and STL were all statically linked in. -->
+-      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries);libucrt.lib</IgnoreSpecificDefaultLibraries>
+-      <AdditionalOptions>%(AdditionalOptions) /defaultlib:ucrt.lib</AdditionalOptions>
+-    </Link>
+-  </ItemDefinitionGroup>
+-
+   <!-- Careful reordering these. Some default props (contained in these files) are order sensitive. -->
+   <Import Project="$(SolutionDir)src\common.build.post.props" />
+ </Project>
+-- 
+2.36.0.windows.1
+
