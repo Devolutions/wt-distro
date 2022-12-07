@@ -47,6 +47,12 @@ jobs:
           Copy-Item .\res\terminal\images-rdm .\res\terminal\images-Dev -Recurse -Force
           Copy-Item .\res\terminal\images-rdm .\res\terminal\images-Pre -Recurse -Force
 
+          $Params = @{
+            MarkdownNoticePath = ".\NOTICE.md";
+            OutputPath = ".\src\cascadia\CascadiaPackage\NOTICE.html";
+          }
+          .\build\scripts\Generate-ThirdPartyNotices.ps1 @Params
+
       - name: Configure Windows Runner
         shell: pwsh
         run: |
