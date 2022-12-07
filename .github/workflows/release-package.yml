@@ -1,4 +1,4 @@
-name: Nuget Package
+name: Release Package
 on:
   workflow_dispatch:
     inputs:
@@ -10,38 +10,30 @@ on:
         description: 'build revision id'
         default: "0"
         required: true
-      codesign:
-        description: 'Code signing'
+      dry-run:
+        description: 'Build packages without publishing'
         required: true
-        default: 'test'
-        type: choice
-        options:
-        - test
-        - prod
-        - none
+        type: boolean
+        default: 'true'
 
 jobs:
   package:
     runs-on: windows-2022
+    environment: build-and-publish
     
     steps:
       - name: Clone project
         uses: actions/checkout@v3
 
       - name: Import code signing certificate
-        if:  ${{ inputs.codesign == 'test' }} 
-        shell: pwsh
+        env:
+          CODE_SIGN_CERT: ${{ secrets.WINDOWS_CODE_SIGNING_CERTIFICATE }}
+          CODE_SIGN_CERT_PASSWORD: ${{ secrets.WINDOWS_CODE_SIGNING_PASSWORD }}
         run: |
-          $AuthenticodePath = "~\Documents\Authenticode"
-          New-Item -ItemType Directory -Path $AuthenticodePath -ErrorAction SilentlyContinue | Out-Null
-          $TestCertsUrl = "https://raw.githubusercontent.com/Devolutions/devolutions-authenticode/master/data/certs"
-          @('authenticode-test-ca.crt','authenticode-test-cert.pfx') | ForEach-Object {
-              Invoke-WebRequest -Uri "$TestCertsUrl/$_" -OutFile $AuthenticodePath\$_
-          }
-          Import-Certificate -FilePath "$AuthenticodePath\authenticode-test-ca.crt" -CertStoreLocation "cert:\LocalMachine\Root"
-          $CodeSignPassword = ConvertTo-SecureString "CodeSign123!" -AsPlainText -Force
-          Import-PfxCertificate -FilePath "$AuthenticodePath\authenticode-test-cert.pfx" -CertStoreLocation 'cert:\CurrentUser\My' -Password $CodeSignPassword
-
+          $CertificatePath = Join-Path -Path $Env:RUNNER_TEMP -ChildPath CodeSigningCertificate.pfx
+          [IO.File]::WriteAllBytes($CertificatePath, ([Convert]::FromBase64String($Env:CODE_SIGN_CERT)))
+          $SecurePassword = ConvertTo-SecureString "$Env:CODE_SIGN_CERT_PASSWORD" -AsPlainText -Force
+          Import-PfxCertificate -FilePath "$CertificatePath" -CertStoreLocation Cert:\CurrentUser\My -Password $SecurePassword
           $CodesignThumbprint = Get-ChildItem cert:\CurrentUser\My -CodeSigning | Select-Object -First 1 -ExpandProperty Thumbprint
           echo "CODESIGN_THUMBPRINT=$CodesignThumbprint" >> $Env:GITHUB_ENV
           echo "TIMESTAMP_SERVER=http://timestamp.digicert.com" >> $Env:GITHUB_ENV
