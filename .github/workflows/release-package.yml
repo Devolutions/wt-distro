@@ -19,7 +19,7 @@ on:
 jobs:
   package:
     runs-on: windows-2022
-    environment: build-and-publish
+    environment: publish
     
     steps:
       - name: Clone project
