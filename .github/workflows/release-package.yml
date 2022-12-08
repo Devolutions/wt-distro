@@ -75,7 +75,7 @@ jobs:
           foreach ($Architecture in @('x64', 'arm64')) {
             $WtDir = "runtimes/win-${Architecture}/native/wt"
             Get-ChildItem -Path "$WtDir/*" -Include @("*.exe","*.dll") -Exclude @("*.Xaml*.dll") | ForEach-Object {
-              Set-AuthenticodeSignature -Certificate $Certificate -TimestampServer $TimestampServer $_
+              Set-AuthenticodeSignature -Certificate $Certificate -TimestampServer $TimestampServer -HashAlgorithm SHA256 $_
             }
           }
 

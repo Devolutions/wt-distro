@@ -75,7 +75,7 @@ if ((Test-Path Env:CODESIGN_THUMBPRINT) -and (Test-Path Env:TIMESTAMP_SERVER)) {
     $TimestampServer = $Env:TIMESTAMP_SERVER
     $Certificate = Get-Item cert:\CurrentUser\My\$Env:CODESIGN_THUMBPRINT
     Get-Item .\$NupkgBaseName\runtimes\win10-*\native\*\*.dll | ForEach-Object {
-        Set-AuthenticodeSignature -Certificate $Certificate -TimestampServer $TimestampServer $_
+        Set-AuthenticodeSignature -Certificate $Certificate -TimestampServer $TimestampServer -HashAlgorithm SHA256 $_
     }
 }
 
