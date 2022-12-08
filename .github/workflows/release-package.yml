@@ -18,6 +18,7 @@ on:
 
 jobs:
   package:
+    name: Build packages
     runs-on: windows-2022
     environment: publish
     
@@ -64,7 +65,8 @@ jobs:
           }
           $RevId = '${{ github.event.inputs.rev_id }}'
           $Version -Replace "(\d+).(\d+).(\d+).(\d+)", "`$1.`$2.`$3.$RevId"
-          Set-Content -Path .\VERSION -Value $Version -NoNewLine -Force
+          New-Item .\package -ItemType Directory -ErrorAction SilentlyContinue | Out-Null
+          Set-Content -Path .\package\VERSION -Value $Version -NoNewLine -Force
 
       - name: Code sign Windows Terminal
         if: ${{ env.CODESIGN_THUMBPRINT }}
@@ -82,7 +84,7 @@ jobs:
       - name: Build zip package
         shell: pwsh
         run: |
-          $Version = Get-Content -Path .\VERSION
+          $Version = Get-Content -Path .\package\VERSION
           Write-Host "Package Version: $Version"
           New-Item -Path "./package" -ItemType Directory -Force | Out-Null
           foreach ($Architecture in @('x64', 'arm64')) {
@@ -104,12 +106,56 @@ jobs:
       - name: Build nuget package
         shell: pwsh
         run: |
-          $Version = Get-Content -Path .\VERSION
+          $Version = Get-Content -Path .\package\VERSION
           Write-Host "Package Version: $Version"
           dotnet pack .\dotnet\Devolutions.WindowsTerminal -c Release -o package /p:Version=$Version
 
       - name: Upload packages
         uses: actions/upload-artifact@v3
         with:
-          name: WindowsTerminal
+          name: wt-release
           path: package/*
+
+  publish:
+    name: Publish packages
+    runs-on: ubuntu-20.04
+    environment: nuget-publish
+    if: ${{ inputs.dry-run == 'false' }} 
+
+    steps:
+      - name: Download packages
+        uses: actions/download-artifact@v3
+        with:
+          name: wt-release
+          path: package
+
+      - name: Publish to nuget.org
+        shell: pwsh
+        run: |
+          $NugetApiKey = '${{ secrets.NUGET_API_KEY }}'
+          $NugetSource = 'https://api.nuget.org/v3/index.json'
+          Get-ChildItem .\package\*.nupkg | ForEach-Object {
+            & dotnet nuget push $_.FullName --api-key $NugetApiKey --source $NugetSource --skip-duplicate
+          }
+
+      - name: Create GitHub Release
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.DEVOLUTIONSBOT_TOKEN }}
+        working-directory: package
+        run: |
+          $Version = Get-Content -Path .\VERSION
+          Remove-Item .\VERSION | Out-Null
+
+          $HashPath = 'checksums'
+          $Files = Get-Item * -Exclude ('VERSION','CHANGELOG.md') | % { Get-FileHash -Algorithm SHA256 $_.FullName }
+          $Files | % { "$($_.Hash)  $(Split-Path $_.Path -Leaf)" } | Out-File -FilePath $HashPath -Append -Encoding ASCII
+
+          echo "::group::checksums"
+          Get-Content $HashPath
+          echo "::endgroup::"
+
+          $ReleaseTag = "v$Version"
+          $Repository = $Env:GITHUB_REPOSITORY
+
+          & gh release create $ReleaseTag --repo $Repository --draft ./*
