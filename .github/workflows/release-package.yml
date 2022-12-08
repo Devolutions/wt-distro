@@ -119,8 +119,9 @@ jobs:
   publish:
     name: Publish packages
     runs-on: ubuntu-20.04
-    environment: nuget-publish
-    if: ${{ inputs.dry-run == 'false' }} 
+    environment: publish
+    needs: package
+    if: ${{ github.event.inputs.dry-run == 'false' }} 
 
     steps:
       - name: Download packages
