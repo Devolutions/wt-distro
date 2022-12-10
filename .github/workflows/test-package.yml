@@ -52,8 +52,8 @@ jobs:
         run: |
           $RunId = '${{ github.event.inputs.run_id }}'
           if ($RunId -eq 'latest') {
-            $RunId = $(gh run list -w 'Windows Terminal' --json 'status,databaseId') |
-              ConvertFrom-Json | Where-Object { $_.status -eq 'completed' } |
+            $RunId = $(gh run list -w 'Windows Terminal' --json 'status,databaseId,conclusion') |
+              ConvertFrom-Json | Where-Object { ($_.status -eq 'completed') -and ($_.conclusion -eq 'success') } |
               Select-Object -First 1 -ExpandProperty databaseId
           }
           Write-Host "Downloading run $RunId"
@@ -72,6 +72,7 @@ jobs:
           $RevId = '${{ github.event.inputs.rev_id }}'
           $Version -Replace "(\d+).(\d+).(\d+).(\d+)", "`$1.`$2.`$3.$RevId"
           Set-Content -Path .\VERSION -Value $Version -NoNewLine -Force
+          New-Item .\package -ItemType Directory -Force | Out-Null
 
       - name: Code sign Windows Terminal
         if: ${{ env.CODESIGN_THUMBPRINT }}
@@ -114,6 +115,30 @@ jobs:
           $Version = Get-Content -Path .\VERSION
           Write-Host "Package Version: $Version"
           dotnet pack .\dotnet\Devolutions.WindowsTerminal -c Release -o package /p:Version=$Version
+
+      - name: Build MSI package
+        shell: pwsh
+        run: |
+          $Version = Get-Content -Path .\VERSION
+          Write-Host "Package Version: $Version"
+          dotnet tool install --global wix --version 4.0.0-preview.1
+          $WixVariables = Get-Content .\installer\Variables.wxi
+          $WixVariables = $WixVariables -Replace 'ProductVersion = "([^"]*)"', "ProductVersion = `"$Version`""
+          Set-Content .\installer\Variables.wxi $WixVariables
+          foreach ($Architecture in @('x64', 'arm64')) {
+            dotnet build /p:Configuration=Release /p:Platform=${Architecture} installer/WindowsTerminal.sln
+            Move-Item ./installer/bin/${Architecture}/Release/en-US/WindowsTerminal.msi ./package/WindowsTerminal-${Version}-${Architecture}.msi
+          }
+
+      - name: Code sign MSI package
+        if: ${{ env.CODESIGN_THUMBPRINT }}
+        shell: pwsh
+        run: |
+          $TimestampServer = $Env:TIMESTAMP_SERVER
+          $Certificate = Get-Item cert:\CurrentUser\My\$Env:CODESIGN_THUMBPRINT
+          Get-ChildItem .\package\*.msi | ForEach-Object {
+            Set-AuthenticodeSignature -Certificate $Certificate -TimestampServer $TimestampServer -HashAlgorithm SHA256 $_
+          }
 
       - name: Upload packages
         uses: actions/upload-artifact@v3
