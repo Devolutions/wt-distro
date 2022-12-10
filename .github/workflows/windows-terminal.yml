@@ -1,5 +1,16 @@
 name: Windows Terminal
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+    inputs:
+      git_ref:
+        description: 'upstream git ref'
+        default: "v1.16.2641.0"
+        required: true
+      version:
+        description: 'build version'
+        default: "1.16.2641.0"
+        required: true
+
 jobs:
   build:
     name: Windows Terminal [${{matrix.arch}}]
@@ -9,8 +20,6 @@ jobs:
       matrix:
         arch: [ x64, arm64 ]
         os: [ windows ]
-        version: [ 1.16.2641.0 ]
-
         include:
           - os: windows
             runner: windows-2022
@@ -19,11 +28,11 @@ jobs:
       - name: Clone project
         uses: actions/checkout@v3
 
-      - name: Clone Windows Terminal ${{matrix.version}}
+      - name: Clone Windows Terminal ${{github.event.inputs.git_ref}}
         uses: actions/checkout@v3
         with:
           repository: microsoft/terminal
-          ref: v${{matrix.version}}
+          ref: ${{github.event.inputs.git_ref}}
           submodules: true
           path: WindowsTerminal
 
@@ -37,10 +46,10 @@ jobs:
           git apply ../patches/add-wt-version-rc-files-to-projects.patch --ignore-whitespace
           git apply ../patches/enable-wt-hybrid-crt-use-static-msvc-runtime.patch --ignore-whitespace
 
-          ..\scripts\SetVersionInfo.ps1 (Get-Location).Path "${{matrix.version}}"
+          ..\scripts\SetVersionInfo.ps1 (Get-Location).Path "${{github.event.inputs.version}}"
 
-          Copy-Item ..\patches\resources\images-rdm .\res\terminal -Recurse -Force
-          Copy-Item ..\patches\resources\images-rdm\terminal.ico .\res\terminal.ico -Force
+          Copy-Item ..\resources\images-rdm .\res\terminal -Recurse -Force
+          Copy-Item ..\resources\terminal.ico .\res\terminal.ico -Force
           Remove-Item .\res\terminal\images -Recurse -Force
           Remove-Item .\res\terminal\images-Dev -Recurse -Force
           Remove-Item .\res\terminal\images-Pre -Recurse -Force
@@ -81,7 +90,7 @@ jobs:
         working-directory: C:\workspace\WindowsTerminal
         run: |
           $TargetPlatform="${{matrix.arch}}"
-          $PackageVersion = "${{matrix.version}}"
+          $PackageVersion = "${{github.event.inputs.version}}"
           $PackageName = "WindowsTerminal-${PackageVersion}-${TargetPlatform}"
           Import-Module .\tools\OpenConsole.psm1
           Set-MsBuildDevEnvironment
@@ -95,5 +104,5 @@ jobs:
       - name: Upload Windows Terminal package
         uses: actions/upload-artifact@v3
         with:
-          name: WindowsTerminal-${{matrix.version}}-${{matrix.arch}}
-          path: C:\workspace\WindowsTerminal-${{matrix.version}}-${{matrix.arch}}.zip
+          name: WindowsTerminal-${{github.event.inputs.version}}-${{matrix.arch}}
+          path: C:\workspace\WindowsTerminal-${{github.event.inputs.version}}-${{matrix.arch}}.zip
