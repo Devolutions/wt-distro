@@ -28,8 +28,6 @@
 				<File Source="$(var.WTDir)\defaults.json"></File>
 				<File Source="$(var.WTDir)\resources.pri"></File>
 				<File Source="$(var.WTDir)\NOTICE.html"></File>
-				<File Source="$(var.WTDir)\AppxManifest.xml"></File>
-				<File Source="$(var.WTDir)\AppxBlockMap.xml"></File>
 			</Component>
 			<Component Guid="e6896119-c022-4203-85a0-bd71b801f3fb">
 				<File Source="$(var.WTDir)\WindowsTerminalShellExt.dll"></File>
@@ -68,9 +66,6 @@
 				<File Source="$(var.WTDir)\ProfileIcons\{9acb9455-ca41-5af7-950f-6bca1bc9722f}.scale-200.png"></File>
 				<File Source="$(var.WTDir)\ProfileIcons\{b453ae62-4e3d-5e58-b989-0a998ec441b8}.scale-100.png"></File>
 				<File Source="$(var.WTDir)\ProfileIcons\{b453ae62-4e3d-5e58-b989-0a998ec441b8}.scale-200.png"></File>
-			</Component>
-			<Component Guid="8442a923-b2c4-4ecc-be07-c21e3b5270cb" Directory="UIXAMLASSETSDIR">
-				<File Source="$(var.WTDir)\Microsoft.UI.Xaml\Assets\NoiseAsset_256X256_PNG.png"></File>
 			</Component>
 		</ComponentGroup>
 	</Fragment>

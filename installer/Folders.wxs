@@ -5,9 +5,6 @@
 			<Directory Id="VENDORDIR" Name="Devolutions">
 				<Directory Id="INSTALLDIR" Name="!(bind.Property.ProductName)" >
 					<Directory Id="PROFILEICONSDIR" Name="ProfileIcons" />
-					<Directory Id="UIXAMLDIR" Name="Microsoft.UI.Xaml">
-						<Directory Id="UIXAMLASSETSDIR" Name="Assets"/>
-					</Directory>
 				</Directory>
 			</Directory>
 		</StandardDirectory>
