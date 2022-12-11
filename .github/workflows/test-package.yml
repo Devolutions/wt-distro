@@ -71,8 +71,9 @@ jobs:
           }
           $RevId = '${{ github.event.inputs.rev_id }}'
           $Version -Replace "(\d+).(\d+).(\d+).(\d+)", "`$1.`$2.`$3.$RevId"
+          New-Item .\package -ItemType Directory -ErrorAction SilentlyContinue | Out-Null
           Set-Content -Path .\VERSION -Value $Version -NoNewLine -Force
-          New-Item .\package -ItemType Directory -Force | Out-Null
+          Set-Content -Path .\package\VERSION -Value $Version -NoNewLine -Force
 
       - name: Code sign Windows Terminal
         if: ${{ env.CODESIGN_THUMBPRINT }}

@@ -67,7 +67,7 @@ jobs:
           $Version -Replace "(\d+).(\d+).(\d+).(\d+)", "`$1.`$2.`$3.$RevId"
           New-Item .\package -ItemType Directory -ErrorAction SilentlyContinue | Out-Null
           Set-Content -Path .\VERSION -Value $Version -NoNewLine -Force
-          New-Item .\package -ItemType Directory -Force | Out-Null
+          Set-Content -Path .\package\VERSION -Value $Version -NoNewLine -Force
 
       - name: Code sign Windows Terminal
         if: ${{ env.CODESIGN_THUMBPRINT }}
@@ -170,7 +170,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.DEVOLUTIONSBOT_TOKEN }}
         working-directory: package
         run: |
-          $Version = Get-Content -Path ..\VERSION
+          $Version = Get-Content -Path .\VERSION
+          Remove-Item .\VERSION | Out-Null
 
           $HashPath = 'checksums'
           $Files = Get-Item * -Exclude ('VERSION','CHANGELOG.md') | % { Get-FileHash -Algorithm SHA256 $_.FullName }
