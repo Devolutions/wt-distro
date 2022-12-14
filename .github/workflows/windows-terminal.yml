@@ -4,11 +4,11 @@ on:
     inputs:
       git_ref:
         description: 'upstream git ref'
-        default: "v1.16.2641.0"
+        default: "v1.16.3463.0"
         required: true
       version:
         description: 'build version'
-        default: "1.16.2641.0"
+        default: "1.16.3463.0"
         required: true
 
 jobs:
