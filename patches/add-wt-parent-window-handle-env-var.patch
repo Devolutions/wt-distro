@@ -1,15 +1,15 @@
-From 5e0e4d02e15cf48a6358d8efd1a0125bd7cd6330 Mon Sep 17 00:00:00 2001
+From 370df3fc4c405144db7c9379f1b30ee815216b4e Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marc-Andr=C3=A9=20Moreau?= <marcandre.moreau@gmail.com>
-Date: Wed, 30 Nov 2022 16:32:36 -0500
-Subject: [PATCH] Add support for WT_PARENT_WINDOW_HANDLE environment variable
+Date: Thu, 15 Dec 2022 11:57:11 -0500
+Subject: [PATCH] add WT_PARENT_WINDOW_HANDLE environment variable
 
 ---
- src/cascadia/WindowsTerminal/IslandWindow.cpp | 15 ++++++++++++++-
+ src/cascadia/WindowsTerminal/IslandWindow.cpp | 31 +++++++++++++++++--
  src/cascadia/WindowsTerminal/IslandWindow.h   |  1 +
- 2 files changed, 15 insertions(+), 1 deletion(-)
+ 2 files changed, 29 insertions(+), 3 deletions(-)
 
 diff --git a/src/cascadia/WindowsTerminal/IslandWindow.cpp b/src/cascadia/WindowsTerminal/IslandWindow.cpp
-index 83b572a08..00fde7ecf 100644
+index 4ed300f9b..7582a67d4 100644
 --- a/src/cascadia/WindowsTerminal/IslandWindow.cpp
 +++ b/src/cascadia/WindowsTerminal/IslandWindow.cpp
 @@ -46,6 +46,19 @@ HWND IslandWindow::GetInteropHandle() const
@@ -32,17 +32,39 @@ index 83b572a08..00fde7ecf 100644
  // Method Description:
  // - Create the actual window that we'll use for the application.
  // Arguments:
-@@ -82,7 +95,7 @@ void IslandWindow::MakeWindow() noexcept
+@@ -74,15 +87,27 @@ void IslandWindow::MakeWindow() noexcept
+     // but it works just fine when the window is in the TOPMOST group. But if
+     // you enable it always, activating the window will remove our DWM frame
+     // entirely. Weird.
+-    WINRT_VERIFY(CreateWindowEx(WS_EX_NOREDIRECTIONBITMAP | (_alwaysOnTop ? WS_EX_TOPMOST : 0),
++
++    HWND hWndParent = GetParentHandle();
++
++    DWORD dwExStyle = WS_EX_NOREDIRECTIONBITMAP | (_alwaysOnTop ? WS_EX_TOPMOST : 0);
++    DWORD dwStyle = WS_OVERLAPPEDWINDOW;
++
++    if (hWndParent)
++    {
++        dwExStyle &= ~(WS_EX_TOPMOST);
++        dwStyle = WS_CHILD | WS_BORDER;
++    }
++
++    WINRT_VERIFY(CreateWindowEx(dwExStyle,
+                                 wc.lpszClassName,
+                                 L"Windows Terminal",
+-                                WS_OVERLAPPEDWINDOW,
++                                dwStyle,
+                                 CW_USEDEFAULT,
                                  CW_USEDEFAULT,
                                  CW_USEDEFAULT,
                                  CW_USEDEFAULT,
 -                                nullptr,
-+                                GetParentHandle(),
++                                hWndParent,
                                  nullptr,
                                  wc.hInstance,
                                  this));
 diff --git a/src/cascadia/WindowsTerminal/IslandWindow.h b/src/cascadia/WindowsTerminal/IslandWindow.h
-index 396bfd04b..757400eb7 100644
+index cfa3e0907..b781eead1 100644
 --- a/src/cascadia/WindowsTerminal/IslandWindow.h
 +++ b/src/cascadia/WindowsTerminal/IslandWindow.h
 @@ -24,6 +24,7 @@ public:
