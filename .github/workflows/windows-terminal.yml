@@ -4,11 +4,11 @@ on:
     inputs:
       git_ref:
         description: 'upstream git ref'
-        default: "v1.16.3463.0"
+        default: "v1.16.10231.0"
         required: true
       version:
         description: 'build version'
-        default: "1.16.3463.0"
+        default: "1.16.10231.0"
         required: true
 
 jobs:
@@ -98,6 +98,7 @@ jobs:
           Remove-Item ".\output\${PackageName}" -Recurse -ErrorAction SilentlyContinue
           New-Item ".\output\${PackageName}" -Type Directory -Force | Out-Null
           & makeappx unpack /v /o /p $MsixPackage.FullName /d ".\output\${PackageName}"
+          Remove-Item ".\output\${PackageName}\Appx*.xml" -Force
           Remove-Item ".\output\${PackageName}\Images" -Recurse
           Compress-Archive ".\output\${PackageName}\*" -DestinationPath "C:\workspace\${PackageName}.zip" -CompressionLevel Optimal
 
