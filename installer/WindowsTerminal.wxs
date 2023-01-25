@@ -23,13 +23,9 @@
 				<File Source="$(var.WTDir)\Microsoft.Terminal.Settings.Model.winmd"></File>
 				<File Source="$(var.WTDir)\Microsoft.UI.Xaml.dll"></File>
 				<File Source="$(var.WTDir)\Microsoft.UI.Xaml.winmd"></File>
-				<File Source="$(var.WTDir)\Microsoft.Toolkit.Win32.UI.XamlHost.dll"></File>
-				<File Source="$(var.WTDir)\Microsoft.Toolkit.Win32.UI.XamlHost.winmd"></File>
 				<File Source="$(var.WTDir)\defaults.json"></File>
 				<File Source="$(var.WTDir)\resources.pri"></File>
 				<File Source="$(var.WTDir)\NOTICE.html"></File>
-				<File Source="$(var.WTDir)\AppxManifest.xml"></File>
-				<File Source="$(var.WTDir)\AppxBlockMap.xml"></File>
 			</Component>
 			<Component Guid="e6896119-c022-4203-85a0-bd71b801f3fb">
 				<File Source="$(var.WTDir)\WindowsTerminalShellExt.dll"></File>
