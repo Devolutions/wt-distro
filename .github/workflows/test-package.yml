@@ -10,40 +10,20 @@ on:
         description: 'build revision id'
         default: "0"
         required: true
-      codesign:
-        description: 'Code signing'
-        required: true
-        default: 'test'
-        type: choice
-        options:
-        - test
-        - none
 
 jobs:
   package:
+    name: Build packages
     runs-on: windows-2022
+    environment: test
     
     steps:
       - name: Clone project
         uses: actions/checkout@v3
 
-      - name: Import code signing certificate
-        if:  ${{ inputs.codesign == 'test' }} 
-        shell: pwsh
+      - name: Install AzureSignTool
         run: |
-          $AuthenticodePath = "~\Documents\Authenticode"
-          New-Item -ItemType Directory -Path $AuthenticodePath -ErrorAction SilentlyContinue | Out-Null
-          $TestCertsUrl = "https://raw.githubusercontent.com/Devolutions/devolutions-authenticode/master/data/certs"
-          @('authenticode-test-ca.crt','authenticode-test-cert.pfx') | ForEach-Object {
-              Invoke-WebRequest -Uri "$TestCertsUrl/$_" -OutFile $AuthenticodePath\$_
-          }
-          Import-Certificate -FilePath "$AuthenticodePath\authenticode-test-ca.crt" -CertStoreLocation "cert:\LocalMachine\Root"
-          $CodeSignPassword = ConvertTo-SecureString "CodeSign123!" -AsPlainText -Force
-          Import-PfxCertificate -FilePath "$AuthenticodePath\authenticode-test-cert.pfx" -CertStoreLocation 'cert:\CurrentUser\My' -Password $CodeSignPassword
-
-          $CodesignThumbprint = Get-ChildItem cert:\CurrentUser\My -CodeSigning | Select-Object -First 1 -ExpandProperty Thumbprint
-          echo "CODESIGN_THUMBPRINT=$CodesignThumbprint" >> $Env:GITHUB_ENV
-          echo "TIMESTAMP_SERVER=http://timestamp.digicert.com" >> $Env:GITHUB_ENV
+          dotnet tool install --global AzureSignTool
 
       - name: Download Windows Terminal
         shell: pwsh
@@ -76,15 +56,20 @@ jobs:
           Set-Content -Path .\package\VERSION -Value $Version -NoNewLine -Force
 
       - name: Code sign Windows Terminal
-        if: ${{ env.CODESIGN_THUMBPRINT }}
         shell: pwsh
         run: |
-          $TimestampServer = $Env:TIMESTAMP_SERVER
-          $Certificate = Get-Item cert:\CurrentUser\My\$Env:CODESIGN_THUMBPRINT
+          $Params = @('sign',
+            '-kvt', '${{ secrets.AZURE_TENANT_ID }}',
+            '-kvu', '${{ secrets.CODE_SIGNING_KEYVAULT_URL }}',
+            '-kvi', '${{ secrets.CODE_SIGNING_CLIENT_ID }}',
+            '-kvs', '${{ secrets.CODE_SIGNING_CLIENT_SECRET }}',
+            '-kvc', '${{ secrets.CODE_SIGNING_CERTIFICATE_NAME }}',
+            '-tr', '${{ vars.CODE_SIGNING_TIMESTAMP_SERVER }}',
+            '-v')
           foreach ($Architecture in @('x64', 'arm64')) {
             $WtDir = "runtimes/win-${Architecture}/native/wt"
             Get-ChildItem -Path "$WtDir/*" -Include @("*.exe","*.dll") -Exclude @("*.Xaml*.dll") | ForEach-Object {
-              Set-AuthenticodeSignature -Certificate $Certificate -TimestampServer $TimestampServer -HashAlgorithm SHA256 $_
+              AzureSignTool @Params $_.FullName
             }
           }
 
@@ -101,14 +86,23 @@ jobs:
           }
 
       - name: Code sign zip package
-        if: ${{ env.CODESIGN_THUMBPRINT }}
         shell: pwsh
         run: |
-          $TimestampServer = $Env:TIMESTAMP_SERVER
-          $Certificate = Get-Item cert:\CurrentUser\My\$Env:CODESIGN_THUMBPRINT
+          $Params = @('sign',
+            '-kvt', '${{ secrets.AZURE_TENANT_ID }}',
+            '-kvu', '${{ secrets.CODE_SIGNING_KEYVAULT_URL }}',
+            '-kvi', '${{ secrets.CODE_SIGNING_CLIENT_ID }}',
+            '-kvs', '${{ secrets.CODE_SIGNING_CLIENT_SECRET }}',
+            '-kvc', '${{ secrets.CODE_SIGNING_CERTIFICATE_NAME }}',
+            '-tr', '${{ vars.CODE_SIGNING_TIMESTAMP_SERVER }}',
+            '-v')
           Install-Module -Name Devolutions.Authenticode -Force
-          Set-ZipAuthenticodeSignature -Certificate $Certificate -TimestampServer $TimestampServer "./package/*.zip"
-          Remove-Item ./package/*.sig.ps1
+          Get-ChildItem -Path "./package/*.zip" | ForEach-Object {
+            $ZipFile = $_.FullName
+            Get-ZipAuthenticodeDigest $ZipFile -Export
+            AzureSignTool @Params "${ZipFile}.sig.ps1"
+            Import-ZipAuthenticodeSignature $ZipFile -Remove
+          }
 
       - name: Build nuget package
         shell: pwsh
@@ -132,17 +126,22 @@ jobs:
           }
 
       - name: Code sign MSI package
-        if: ${{ env.CODESIGN_THUMBPRINT }}
         shell: pwsh
         run: |
-          $TimestampServer = $Env:TIMESTAMP_SERVER
-          $Certificate = Get-Item cert:\CurrentUser\My\$Env:CODESIGN_THUMBPRINT
+          $Params = @('sign',
+            '-kvt', '${{ secrets.AZURE_TENANT_ID }}',
+            '-kvu', '${{ secrets.CODE_SIGNING_KEYVAULT_URL }}',
+            '-kvi', '${{ secrets.CODE_SIGNING_CLIENT_ID }}',
+            '-kvs', '${{ secrets.CODE_SIGNING_CLIENT_SECRET }}',
+            '-kvc', '${{ secrets.CODE_SIGNING_CERTIFICATE_NAME }}',
+            '-tr', '${{ vars.CODE_SIGNING_TIMESTAMP_SERVER }}',
+            '-v')
           Get-ChildItem .\package\*.msi | ForEach-Object {
-            Set-AuthenticodeSignature -Certificate $Certificate -TimestampServer $TimestampServer -HashAlgorithm SHA256 $_
+            AzureSignTool @Params $_.FullName
           }
 
       - name: Upload packages
         uses: actions/upload-artifact@v3
         with:
-          name: WindowsTerminal
+          name: wt-release
           path: package/*
