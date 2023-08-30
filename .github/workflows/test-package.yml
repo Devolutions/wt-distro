@@ -15,7 +15,7 @@ jobs:
   package:
     name: Build packages
     runs-on: windows-2022
-    environment: test
+    environment: publish-test
     
     steps:
       - name: Clone project
