@@ -3,25 +3,25 @@ on:
   workflow_dispatch:
     inputs:
       run_id:
-        description: 'workflow run id'
-        default: "latest"
+        description: workflow run id
+        default: latest
         required: true
       rev_id:
-        description: 'build revision id'
-        default: "0"
+        description: build revision id
+        default: '0'
         required: true
-      dry-run:
-        description: 'Build packages without publishing'
+      dry_run:
+        description: Build packages without publishing
         required: true
         type: boolean
-        default: 'true'
+        default: true
 
 jobs:
   package:
     name: Build packages
     runs-on: windows-2022
     environment: publish-prod
-    
+
     steps:
       - name: Clone project
         uses: actions/checkout@v3
@@ -35,7 +35,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $RunId = '${{ github.event.inputs.run_id }}'
+          $RunId = '${{ inputs.run_id }}'
           if ($RunId -eq 'latest') {
             $RunId = $(gh run list -w 'Windows Terminal' --json 'status,databaseId,conclusion') |
               ConvertFrom-Json | Where-Object { ($_.status -eq 'completed') -and ($_.conclusion -eq 'success') } |
@@ -54,7 +54,7 @@ jobs:
               Remove-Item $_.Directory -ErrorAction SilentlyContinue
             }
           }
-          $RevId = '${{ github.event.inputs.rev_id }}'
+          $RevId = '${{ inputs.rev_id }}'
           $Version -Replace "(\d+).(\d+).(\d+).(\d+)", "`$1.`$2.`$3.$RevId"
           New-Item .\package -ItemType Directory -ErrorAction SilentlyContinue | Out-Null
           Set-Content -Path .\VERSION -Value $Version -NoNewLine -Force
@@ -156,7 +156,7 @@ jobs:
     runs-on: ubuntu-20.04
     environment: publish
     needs: package
-    if: ${{ github.event.inputs.dry-run == 'false' }} 
+    if: ${{ inputs.dry_run == false }}
 
     steps:
       - name: Download packages
@@ -177,7 +177,7 @@ jobs:
       - name: Create GitHub Release
         shell: pwsh
         env:
-          GITHUB_TOKEN: ${{ secrets.DEVOLUTIONSBOT_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         working-directory: package
         run: |
           $Version = Get-Content -Path .\VERSION
