@@ -3,18 +3,18 @@ on:
   workflow_dispatch:
     inputs:
       git_ref:
-        description: 'upstream git ref'
-        default: "v1.16.10231.0"
+        description: upstream git ref
+        default: 'v1.16.10231.0'
         required: true
       version:
-        description: 'build version'
-        default: "1.16.10231.0"
+        description: build version
+        default: '1.16.10231.0'
         required: true
 
 jobs:
   build:
-    name: Windows Terminal [${{matrix.arch}}]
-    runs-on: ${{matrix.runner}}
+    name: Windows Terminal [${{ matrix.arch }}]
+    runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: true
       matrix:
@@ -23,30 +23,30 @@ jobs:
         include:
           - os: windows
             runner: windows-2022
-  
+
     steps:
       - name: Clone project
         uses: actions/checkout@v3
 
-      - name: Clone Windows Terminal ${{github.event.inputs.git_ref}}
+      - name: Clone Windows Terminal ${{ inputs.git_ref }}
         uses: actions/checkout@v3
         with:
           repository: microsoft/terminal
-          ref: ${{github.event.inputs.git_ref}}
+          ref: ${{ inputs.git_ref }}
           submodules: true
           path: WindowsTerminal
 
       - name: Patch Windows Terminal
         shell: pwsh
         working-directory: WindowsTerminal
-        run: |          
+        run: |
           git apply ../patches/add-wt-base-settings-path-env-var.patch --ignore-whitespace
           git apply ../patches/add-wt-parent-window-handle-env-var.patch --ignore-whitespace
           git apply ../patches/fix-wt-release-manifest-proxy-stub-clsids.patch --ignore-whitespace
           git apply ../patches/add-wt-version-rc-files-to-projects.patch --ignore-whitespace
           git apply ../patches/enable-wt-hybrid-crt-use-static-msvc-runtime.patch --ignore-whitespace
 
-          ..\scripts\SetVersionInfo.ps1 (Get-Location).Path "${{github.event.inputs.version}}"
+          ..\scripts\SetVersionInfo.ps1 (Get-Location).Path "${{ inputs.version }}"
 
           Copy-Item ..\resources\images-rdm .\res\terminal -Recurse -Force
           Copy-Item ..\resources\terminal.ico .\res\terminal.ico -Force
@@ -74,7 +74,7 @@ jobs:
         shell: pwsh
         working-directory: C:\workspace\WindowsTerminal
         run: |
-          $TargetPlatform="${{matrix.arch}}"
+          $TargetPlatform="${{ matrix.arch }}"
           Import-Module .\tools\OpenConsole.psm1
           Set-MsBuildDevEnvironment
           $MSBuildOptions = @(
@@ -89,8 +89,8 @@ jobs:
         shell: pwsh
         working-directory: C:\workspace\WindowsTerminal
         run: |
-          $TargetPlatform="${{matrix.arch}}"
-          $PackageVersion = "${{github.event.inputs.version}}"
+          $TargetPlatform="${{ matrix.arch }}"
+          $PackageVersion = "${{ inputs.version }}"
           $PackageName = "WindowsTerminal-${PackageVersion}-${TargetPlatform}"
           Import-Module .\tools\OpenConsole.psm1
           Set-MsBuildDevEnvironment
@@ -105,5 +105,5 @@ jobs:
       - name: Upload Windows Terminal package
         uses: actions/upload-artifact@v3
         with:
-          name: WindowsTerminal-${{github.event.inputs.version}}-${{matrix.arch}}
-          path: C:\workspace\WindowsTerminal-${{github.event.inputs.version}}-${{matrix.arch}}.zip
+          name: WindowsTerminal-${{ inputs.version }}-${{ matrix.arch }}
+          path: C:\workspace\WindowsTerminal-${{ inputs.version }}-${{ matrix.arch }}.zip

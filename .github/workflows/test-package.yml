@@ -3,12 +3,12 @@ on:
   workflow_dispatch:
     inputs:
       run_id:
-        description: 'workflow run id'
-        default: "latest"
+        description: workflow run id
+        default: latest
         required: true
       rev_id:
-        description: 'build revision id'
-        default: "0"
+        description: build revision id
+        default: '0'
         required: true
 
 jobs:
@@ -16,7 +16,7 @@ jobs:
     name: Build packages
     runs-on: windows-2022
     environment: publish-test
-    
+
     steps:
       - name: Clone project
         uses: actions/checkout@v3
@@ -30,7 +30,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $RunId = '${{ github.event.inputs.run_id }}'
+          $RunId = '${{ inputs.run_id }}'
           if ($RunId -eq 'latest') {
             $RunId = $(gh run list -w 'Windows Terminal' --json 'status,databaseId,conclusion') |
               ConvertFrom-Json | Where-Object { ($_.status -eq 'completed') -and ($_.conclusion -eq 'success') } |
@@ -49,7 +49,7 @@ jobs:
               Remove-Item $_.Directory -ErrorAction SilentlyContinue
             }
           }
-          $RevId = '${{ github.event.inputs.rev_id }}'
+          $RevId = '${{ inputs.rev_id }}'
           $Version -Replace "(\d+).(\d+).(\d+).(\d+)", "`$1.`$2.`$3.$RevId"
           New-Item .\package -ItemType Directory -ErrorAction SilentlyContinue | Out-Null
           Set-Content -Path .\VERSION -Value $Version -NoNewLine -Force
