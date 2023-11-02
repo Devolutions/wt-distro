@@ -1,17 +1,17 @@
-From 970cd1c4a1b91d629bba65ee8d130a33928aae01 Mon Sep 17 00:00:00 2001
-From: =?UTF-8?q?Marc-Andr=C3=A9=20Moreau?= <marcandre.moreau@gmail.com>
-Date: Tue, 6 Dec 2022 15:36:10 -0500
-Subject: [PATCH] append version.rc files in vcxproj automatically
+From d9f6480ee61a57f805065c3f6c759951dbe8256f Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marc-Andr=C3=A9=20Moreau?= <mamoreau@devolutions.net>
+Date: Thu, 2 Nov 2023 16:27:45 -0400
+Subject: [PATCH] [PATCH] append version.rc files in vcxproj automatically
 
 ---
  src/common.build.post.props | 7 +++++++
  1 file changed, 7 insertions(+)
 
 diff --git a/src/common.build.post.props b/src/common.build.post.props
-index 47b2ccd03..17f210b0e 100644
+index 1326e062b..410f93368 100644
 --- a/src/common.build.post.props
 +++ b/src/common.build.post.props
-@@ -77,4 +77,11 @@
+@@ -113,4 +113,11 @@
        <ForcedIncludeFiles>$(SolutionDir)\bin\$(Configuration)\inc\TilFeatureStaging.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
      </ClCompile>
    </ItemDefinitionGroup>
@@ -24,5 +24,5 @@ index 47b2ccd03..17f210b0e 100644
 +  </Target>
  </Project>
 -- 
-2.36.0.windows.1
+2.39.1.windows.1
 

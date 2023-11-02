@@ -2,8 +2,12 @@
 	<?include $(sys.CURRENTDIR)Variables.wxi ?>
 	<Fragment>
 		<ComponentGroup Id="WindowsTerminal" Directory="INSTALLDIR">
+			<Component Guid="15b3290e-d4a3-4ea5-aeac-277a258bd504">
+				<File Id="wt.exe" Source="$(var.WTDir)\wt.exe" KeyPath="yes">
+					<Shortcut Name="$(var.ProductName)" Directory="ProgramMenuFolder" WorkingDirectory="INSTALLDIR" Icon="terminal.ico" Advertise="yes" />
+				</File>
+			</Component>
 			<Component Guid="5a2ba901-a32c-47c2-b457-93ae24d59d2c">
-				<File Source="$(var.WTDir)\wt.exe"></File>
 				<File Source="$(var.WTDir)\WindowsTerminal.exe"></File>
 				<File Source="$(var.WTDir)\OpenConsole.exe"></File>
 				<File Source="$(var.WTDir)\OpenConsoleProxy.dll"></File>
@@ -12,17 +16,12 @@
 				<File Source="$(var.WTDir)\TerminalConnection.dll"></File>
 				<File Source="$(var.WTDir)\TerminalThemeHelpers.dll"></File>
 				<File Source="$(var.WTDir)\elevate-shim.exe"></File>
-				<File Source="$(var.WTDir)\cpprest142_2_10.dll"></File>
 				<File Source="$(var.WTDir)\Microsoft.Terminal.Control.dll"></File>
-				<File Source="$(var.WTDir)\Microsoft.Terminal.Control.winmd"></File>
 				<File Source="$(var.WTDir)\Microsoft.Terminal.Remoting.dll"></File>
 				<File Source="$(var.WTDir)\Microsoft.Terminal.Remoting.winmd"></File>
 				<File Source="$(var.WTDir)\Microsoft.Terminal.Settings.Editor.dll"></File>
-				<File Source="$(var.WTDir)\Microsoft.Terminal.Settings.Editor.winmd"></File>
 				<File Source="$(var.WTDir)\Microsoft.Terminal.Settings.Model.dll"></File>
-				<File Source="$(var.WTDir)\Microsoft.Terminal.Settings.Model.winmd"></File>
 				<File Source="$(var.WTDir)\Microsoft.UI.Xaml.dll"></File>
-				<File Source="$(var.WTDir)\Microsoft.UI.Xaml.winmd"></File>
 				<File Source="$(var.WTDir)\defaults.json"></File>
 				<File Source="$(var.WTDir)\resources.pri"></File>
 				<File Source="$(var.WTDir)\NOTICE.html"></File>
@@ -30,18 +29,11 @@
 			<Component Guid="e6896119-c022-4203-85a0-bd71b801f3fb">
 				<File Source="$(var.WTDir)\WindowsTerminalShellExt.dll"></File>
 			</Component>
-			<Component Guid="91019a4e-9603-4be9-9320-a8a52f51579b">
-				<File Source="$(var.WTDir)\concrt140_app.dll"></File>
-				<File Source="$(var.WTDir)\msvcp140_1_app.dll"></File>
-				<File Source="$(var.WTDir)\msvcp140_2_app.dll"></File>
-				<File Source="$(var.WTDir)\msvcp140_app.dll"></File>
-				<File Source="$(var.WTDir)\vcamp140_app.dll"></File>
-				<File Source="$(var.WTDir)\vccorlib140_app.dll"></File>
-				<File Source="$(var.WTDir)\vcomp140_app.dll"></File>
-				<File Source="$(var.WTDir)\vcruntime140_app.dll"></File>
-				<?if $(var.Platform) = x64 ?>
-					<File Source="$(var.WTDir)\vcruntime140_1_app.dll"></File>
-				<?endif ?>
+			<Component Guid="e3831e5c-a761-43d3-9743-596e1bfa2074">
+				<File Source="$(var.WTDir)\CascadiaCode.ttf"></File>
+				<File Source="$(var.WTDir)\CascadiaCodeItalic.ttf"></File>
+				<File Source="$(var.WTDir)\CascadiaMono.ttf"></File>
+				<File Source="$(var.WTDir)\CascadiaMonoItalic.ttf"></File>
 			</Component>
 			<Component Guid="4f723491-c67d-490b-b895-562a83da1b06" Directory="PROFILEICONSDIR">
 				<File Source="$(var.WTDir)\ProfileIcons\pwsh.scale-100.png"></File>

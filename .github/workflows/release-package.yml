@@ -10,25 +10,65 @@ on:
         description: build revision id
         default: '0'
         required: true
-      dry_run:
-        description: Build packages without publishing
+      skip-publish:
+        description: Skip publishing
+        required: true
+        type: boolean
+        default: false
+      dry-run:
+        description: Dry run (simulate)
         required: true
         type: boolean
         default: true
 
 jobs:
+  preflight:
+    name: preflight
+    runs-on: ubuntu-22.04
+    outputs:
+      package-env: ${{ steps.info.outputs.package-env }}
+      dry-run: ${{ steps.info.outputs.dry-run }}
+
+    steps:
+      - name: Package information
+        id: info
+        shell: pwsh
+        run: |
+          $IsMasterBranch = ('${{ github.ref_name }}' -eq 'master')
+          $DryRun = [System.Boolean]::Parse('${{ inputs.dry-run }}')
+          $PackageEnv = if ($IsMasterBranch) {
+            "publish-prod"
+          } else {
+            "publish-test"
+          }
+          if (-Not $IsMasterBranch) {
+            $DryRun = $true # force dry run when not on master branch
+          }
+          echo "package-env=$PackageEnv" >> $Env:GITHUB_OUTPUT
+          echo "dry-run=$($DryRun.ToString().ToLower())" >> $Env:GITHUB_OUTPUT
+
+          echo "::notice::DryRun: $DryRun"
+
   package:
     name: Build packages
     runs-on: windows-2022
-    environment: publish-prod
+    needs: preflight
+    environment: ${{ needs.preflight.outputs.package-env }}
 
     steps:
       - name: Clone project
         uses: actions/checkout@v3
 
-      - name: Install AzureSignTool
+      - name: Install code signing tools
         run: |
           dotnet tool install --global AzureSignTool
+          dotnet tool install --global NuGetKeyVaultSignTool
+
+          # trust test code signing CA
+          $TestCertsUrl = "https://raw.githubusercontent.com/Devolutions/devolutions-authenticode/master/data/certs"
+          Invoke-WebRequest -Uri "$TestCertsUrl/authenticode-test-ca.crt" -OutFile ".\authenticode-test-ca.crt"
+          Import-Certificate -FilePath ".\authenticode-test-ca.crt" -CertStoreLocation "cert:\LocalMachine\Root"
+          Remove-Item ".\authenticode-test-ca.crt" -ErrorAction SilentlyContinue | Out-Null
 
       - name: Download Windows Terminal
         shell: pwsh
@@ -116,12 +156,26 @@ jobs:
           Write-Host "Package Version: $Version"
           dotnet pack .\dotnet\Devolutions.WindowsTerminal -c Release -o package /p:Version=$Version
 
+      - name: Code sign nuget package
+        shell: pwsh
+        run: |
+          $NugetPackage = (Get-Item ".\package\*.nupkg" | Select-Object -First 1) | Resolve-Path -Relative
+          $Params = @('sign', $NugetPackage,
+          '-kvt', '${{ secrets.AZURE_TENANT_ID }}',
+          '-kvu', '${{ secrets.CODE_SIGNING_KEYVAULT_URL }}',
+          '-kvi', '${{ secrets.CODE_SIGNING_CLIENT_ID }}',
+          '-kvs', '${{ secrets.CODE_SIGNING_CLIENT_SECRET }}',
+          '-kvc', '${{ secrets.CODE_SIGNING_CERTIFICATE_NAME }}',
+          '-tr', '${{ vars.CODE_SIGNING_TIMESTAMP_SERVER }}',
+          '-v')
+          & NuGetKeyVaultSignTool @Params
+
       - name: Build MSI package
         shell: pwsh
         run: |
           $Version = Get-Content -Path .\VERSION
           Write-Host "Package Version: $Version"
-          dotnet tool install --global wix --version 4.0.0-preview.1
+          dotnet tool install --global wix --version 4.0.2
           $WixVariables = Get-Content .\installer\Variables.wxi
           $WixVariables = $WixVariables -Replace 'ProductVersion = "([^"]*)"', "ProductVersion = `"$Version`""
           Set-Content .\installer\Variables.wxi $WixVariables
@@ -153,10 +207,10 @@ jobs:
 
   publish:
     name: Publish packages
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     environment: publish
-    needs: package
-    if: ${{ inputs.dry_run == false }}
+    needs: [preflight, package]
+    if: ${{ inputs.skip-publish == 'false' }}
 
     steps:
       - name: Download packages
@@ -168,10 +222,19 @@ jobs:
       - name: Publish to nuget.org
         shell: pwsh
         run: |
-          $NugetApiKey = '${{ secrets.NUGET_API_KEY }}'
-          $NugetSource = 'https://api.nuget.org/v3/index.json'
-          Get-ChildItem .\package\*.nupkg | ForEach-Object {
-            & dotnet nuget push $_.FullName --api-key $NugetApiKey --source $NugetSource --skip-duplicate
+          $DryRun = [System.Boolean]::Parse('${{ needs.preflight.outputs.dry-run }}')
+          $NugetPackage = (Get-Item ./package/*.nupkg) | Resolve-Path -Relative
+          $PushArgs = @(
+            'nuget', 'push', "$NugetPackage",
+            '--api-key', '${{ secrets.NUGET_API_KEY }}',
+            '--source', 'https://api.nuget.org/v3/index.json',
+            '--skip-duplicate', '--no-symbols'
+          )
+          Write-Host "dotnet $($PushArgs -Join ' ')"
+          if ($DryRun) {
+            Write-Host "Dry Run: skipping nuget.org publishing!"
+          } else {
+            & 'dotnet' $PushArgs
           }
 
       - name: Create GitHub Release
@@ -180,6 +243,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         working-directory: package
         run: |
+          $DryRun = [System.Boolean]::Parse('${{ needs.preflight.outputs.dry-run }}')
+
           $Version = Get-Content -Path .\VERSION
           Remove-Item .\VERSION | Out-Null
 
@@ -195,4 +260,8 @@ jobs:
           $Repository = $Env:GITHUB_REPOSITORY
           $ReleaseTitle = "Devolutions Windows Terminal v${Version}"
 
-          & gh release create $ReleaseTag --repo $Repository --title $ReleaseTitle --draft ./*
+          if ($DryRun) {
+            Write-Host "Dry Run: skipping GitHub release!"
+          } else {
+            & gh release create $ReleaseTag --repo $Repository --title $ReleaseTitle --draft ./*
+          }
