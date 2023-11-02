@@ -1,7 +1,7 @@
-From 370df3fc4c405144db7c9379f1b30ee815216b4e Mon Sep 17 00:00:00 2001
-From: =?UTF-8?q?Marc-Andr=C3=A9=20Moreau?= <marcandre.moreau@gmail.com>
-Date: Thu, 15 Dec 2022 11:57:11 -0500
-Subject: [PATCH] add WT_PARENT_WINDOW_HANDLE environment variable
+From e543ebeca9db8d676b87d087aa839d357c00d81f Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marc-Andr=C3=A9=20Moreau?= <mamoreau@devolutions.net>
+Date: Thu, 2 Nov 2023 16:25:19 -0400
+Subject: [PATCH] [PATCH] add WT_PARENT_WINDOW_HANDLE environment variable
 
 ---
  src/cascadia/WindowsTerminal/IslandWindow.cpp | 31 +++++++++++++++++--
@@ -9,10 +9,10 @@ Subject: [PATCH] add WT_PARENT_WINDOW_HANDLE environment variable
  2 files changed, 29 insertions(+), 3 deletions(-)
 
 diff --git a/src/cascadia/WindowsTerminal/IslandWindow.cpp b/src/cascadia/WindowsTerminal/IslandWindow.cpp
-index 4ed300f9b..7582a67d4 100644
+index 9bea05acf..f9e824cb6 100644
 --- a/src/cascadia/WindowsTerminal/IslandWindow.cpp
 +++ b/src/cascadia/WindowsTerminal/IslandWindow.cpp
-@@ -46,6 +46,19 @@ HWND IslandWindow::GetInteropHandle() const
+@@ -85,6 +85,19 @@ HWND IslandWindow::GetInteropHandle() const
      return _interopWindowHandle;
  }
  
@@ -32,7 +32,7 @@ index 4ed300f9b..7582a67d4 100644
  // Method Description:
  // - Create the actual window that we'll use for the application.
  // Arguments:
-@@ -74,15 +87,27 @@ void IslandWindow::MakeWindow() noexcept
+@@ -119,15 +132,27 @@ void IslandWindow::MakeWindow() noexcept
      // but it works just fine when the window is in the TOPMOST group. But if
      // you enable it always, activating the window will remove our DWM frame
      // entirely. Weird.
@@ -64,17 +64,17 @@ index 4ed300f9b..7582a67d4 100644
                                  wc.hInstance,
                                  this));
 diff --git a/src/cascadia/WindowsTerminal/IslandWindow.h b/src/cascadia/WindowsTerminal/IslandWindow.h
-index cfa3e0907..b781eead1 100644
+index eee013c52..3fccc5ab0 100644
 --- a/src/cascadia/WindowsTerminal/IslandWindow.h
 +++ b/src/cascadia/WindowsTerminal/IslandWindow.h
-@@ -24,6 +24,7 @@ public:
-     void Close();
+@@ -27,6 +27,7 @@ public:
+ 
      virtual void OnSize(const UINT width, const UINT height);
      HWND GetInteropHandle() const;
 +    HWND GetParentHandle() const;
  
      [[nodiscard]] virtual LRESULT MessageHandler(UINT const message, WPARAM const wparam, LPARAM const lparam) noexcept override;
-     void OnResize(const UINT width, const UINT height) override;
+ 
 -- 
-2.36.0.windows.1
+2.39.1.windows.1
 

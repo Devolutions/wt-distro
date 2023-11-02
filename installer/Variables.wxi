@@ -4,7 +4,7 @@
 	<?define VendorFullName = "Devolutions Inc." ?>
 
 	<?define ProductName = "Windows Terminal" ?>
-	<?define ProductVersion = "yolo" ?>
+	<?define ProductVersion = "1.0.0.0" ?>
 
 	<!-- Upgrade code HAS to be the same for all updates. Once you've chosen it don't change it. -->
 	<?define UpgradeCode="2bebc64d-c3c7-4777-b057-902bf834994e" ?>

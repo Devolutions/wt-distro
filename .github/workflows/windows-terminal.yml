@@ -4,11 +4,11 @@ on:
     inputs:
       git_ref:
         description: upstream git ref
-        default: 'v1.16.10231.0'
+        default: 'v1.18.2822.0'
         required: true
       version:
         description: build version
-        default: '1.16.10231.0'
+        default: '1.18.2822.0'
         required: true
 
 jobs:
@@ -16,7 +16,7 @@ jobs:
     name: Windows Terminal [${{ matrix.arch }}]
     runs-on: ${{ matrix.runner }}
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         arch: [ x64, arm64 ]
         os: [ windows ]
@@ -42,9 +42,7 @@ jobs:
         run: |
           git apply ../patches/add-wt-base-settings-path-env-var.patch --ignore-whitespace
           git apply ../patches/add-wt-parent-window-handle-env-var.patch --ignore-whitespace
-          git apply ../patches/fix-wt-release-manifest-proxy-stub-clsids.patch --ignore-whitespace
           git apply ../patches/add-wt-version-rc-files-to-projects.patch --ignore-whitespace
-          git apply ../patches/enable-wt-hybrid-crt-use-static-msvc-runtime.patch --ignore-whitespace
 
           ..\scripts\SetVersionInfo.ps1 (Get-Location).Path "${{ inputs.version }}"
 
@@ -94,13 +92,17 @@ jobs:
           $PackageName = "WindowsTerminal-${PackageVersion}-${TargetPlatform}"
           Import-Module .\tools\OpenConsole.psm1
           Set-MsBuildDevEnvironment
+          $OutputDir = Get-Item ".\bin"
+          $XamlAppxPath = (Get-Item "src\cascadia\CascadiaPackage\AppPackages\*\Dependencies\$TargetPlatform\Microsoft.UI.Xaml*.appx").FullName
           $MsixPackage = Get-Item ".\src\cascadia\CascadiaPackage\AppPackages\CascadiaPackage_*_${TargetPlatform}_Test\CascadiaPackage_*_${TargetPlatform}.msix"
-          Remove-Item ".\output\${PackageName}" -Recurse -ErrorAction SilentlyContinue
-          New-Item ".\output\${PackageName}" -Type Directory -Force | Out-Null
-          & makeappx unpack /v /o /p $MsixPackage.FullName /d ".\output\${PackageName}"
-          Remove-Item ".\output\${PackageName}\Appx*.xml" -Force
-          Remove-Item ".\output\${PackageName}\Images" -Recurse
-          Compress-Archive ".\output\${PackageName}\*" -DestinationPath "C:\workspace\${PackageName}.zip" -CompressionLevel Optimal
+          & .\build\scripts\New-UnpackagedTerminalDistribution.ps1 -TerminalAppX $MsixPackage -XamlAppX $XamlAppxPath -Destination $OutputDir.FullName
+          Get-ChildItem -Path $OutputDir Microsoft.WindowsTerminal_*.zip | ForEach-Object { 
+            Expand-Archive -Path $_.FullName -DestinationPath $_.Directory -Force; Remove-Item $_
+          }
+          $TerminalAppPath = Get-ChildItem -Path $OutputDir -Attributes Directory terminal-* | Select-Object -First 1
+          Copy-Item ".\res\fonts\*.ttf" -Destination $TerminalAppPath
+          Move-Item -Path $TerminalAppPath -Destination "$OutputDir\${PackageName}"
+          Compress-Archive "$OutputDir\${PackageName}\*" -DestinationPath "C:\workspace\${PackageName}.zip" -CompressionLevel Optimal
 
       - name: Upload Windows Terminal package
         uses: actions/upload-artifact@v3

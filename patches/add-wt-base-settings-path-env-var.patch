@@ -1,17 +1,18 @@
-From 9ec5a422006a854eee65d4dfc7634c364f19d49a Mon Sep 17 00:00:00 2001
-From: =?UTF-8?q?Marc-Andr=C3=A9=20Moreau?= <marcandre.moreau@gmail.com>
-Date: Fri, 25 Nov 2022 15:22:17 -0500
-Subject: [PATCH] Add support for WT_BASE_SETTINGS_PATH environment variable
+From ab3469d2a333bbbebf570bad689f5c56fc8799d6 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marc-Andr=C3=A9=20Moreau?= <mamoreau@devolutions.net>
+Date: Thu, 2 Nov 2023 16:19:01 -0400
+Subject: [PATCH] [PATCH] Add support for WT_BASE_SETTINGS_PATH environment
+ variable
 
 ---
  src/cascadia/TerminalSettingsModel/FileUtils.cpp | 10 ++++++++++
  1 file changed, 10 insertions(+)
 
 diff --git a/src/cascadia/TerminalSettingsModel/FileUtils.cpp b/src/cascadia/TerminalSettingsModel/FileUtils.cpp
-index bc9100afa..1743c80ca 100644
+index ce219a6e0..09ac20fd8 100644
 --- a/src/cascadia/TerminalSettingsModel/FileUtils.cpp
 +++ b/src/cascadia/TerminalSettingsModel/FileUtils.cpp
-@@ -41,6 +41,16 @@ namespace winrt::Microsoft::Terminal::Settings::Model
+@@ -61,6 +61,16 @@ namespace winrt::Microsoft::Terminal::Settings::Model
  
              return parentDirectoryForSettingsFile;
          }();
@@ -29,5 +30,5 @@ index bc9100afa..1743c80ca 100644
      }
  
 -- 
-2.36.0.windows.1
+2.39.1.windows.1
 
