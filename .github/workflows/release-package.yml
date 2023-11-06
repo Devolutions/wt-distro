@@ -162,7 +162,7 @@ jobs:
           dotnet pack .\dotnet\Devolutions.WindowsTerminal -c Release -o package /p:Version=$Version
 
       - name: Code sign nuget package
-        if: ${{ fromJSON(inputs.sign-nuget) == false }}
+        if: ${{ fromJSON(inputs.sign-nuget) == true }}
         shell: pwsh
         run: |
           $NugetPackage = (Get-Item ".\package\*.nupkg" | Select-Object -First 1) | Resolve-Path -Relative
@@ -269,5 +269,5 @@ jobs:
           if ($DryRun) {
             Write-Host "Dry Run: skipping GitHub release!"
           } else {
-            & gh release create $ReleaseTag --repo $Repository --title $ReleaseTitle --draft ./*
+            & gh release create $ReleaseTag --repo $Repository --title $ReleaseTitle ./*
           }
