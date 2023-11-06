@@ -208,8 +208,8 @@ jobs:
   publish:
     name: Publish packages
     runs-on: ubuntu-22.04
-    environment: publish
     needs: [preflight, package]
+    environment: ${{ needs.preflight.outputs.package-env }}
     if: ${{ fromJSON(inputs.skip-publish) == false }}
 
     steps:
