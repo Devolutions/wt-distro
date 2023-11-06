@@ -210,7 +210,7 @@ jobs:
     runs-on: ubuntu-22.04
     environment: publish
     needs: [preflight, package]
-    if: ${{ inputs.skip-publish == 'false' }}
+    if: ${{ fromJSON(inputs.skip-publish) == false }}
 
     steps:
       - name: Download packages
