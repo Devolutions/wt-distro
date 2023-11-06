@@ -10,6 +10,11 @@ on:
         description: build revision id
         default: '0'
         required: true
+      sign-nuget:
+        description: Sign nuget package
+        required: true
+        type: boolean
+        default: false
       skip-publish:
         description: Skip publishing
         required: true
@@ -157,6 +162,7 @@ jobs:
           dotnet pack .\dotnet\Devolutions.WindowsTerminal -c Release -o package /p:Version=$Version
 
       - name: Code sign nuget package
+        if: ${{ fromJSON(inputs.sign-nuget) == false }}
         shell: pwsh
         run: |
           $NugetPackage = (Get-Item ".\package\*.nupkg" | Select-Object -First 1) | Resolve-Path -Relative
