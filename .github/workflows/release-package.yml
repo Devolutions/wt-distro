@@ -118,7 +118,7 @@ jobs:
             '-v')
           foreach ($Architecture in @('x64', 'arm64')) {
             $WtDir = "runtimes/win-${Architecture}/native/wt"
-            Get-ChildItem -Path "$WtDir/*" -Include @("*.exe","*.dll") -Exclude @("*.Xaml*.dll") | ForEach-Object {
+            Get-ChildItem -Path "$WtDir/*" -Include @("*.exe","*.dll","*.winmd") -Exclude @("*.Xaml*.dll") | ForEach-Object {
               AzureSignTool @Params $_.FullName
             }
           }
