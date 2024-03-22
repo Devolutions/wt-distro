@@ -41,6 +41,7 @@ jobs:
         working-directory: WindowsTerminal
         run: |
           git apply ../patches/add-wt-base-settings-path-env-var.patch --ignore-whitespace
+          git apply ../patches/add-monarch-clsid-base-settings-path-env.patch --ignore-whitespace
           git apply ../patches/add-wt-parent-window-handle-env-var.patch --ignore-whitespace
           git apply ../patches/add-wt-version-rc-files-to-projects.patch --ignore-whitespace
 

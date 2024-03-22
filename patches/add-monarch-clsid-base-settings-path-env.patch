@@ -1,0 +1,43 @@
+From d6ae78c2fd60cbd2c14c485b9688eddf0872d62a Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marc-Andr=C3=A9=20Moreau?= <mamoreau@devolutions.net>
+Date: Fri, 22 Mar 2024 11:12:59 -0400
+Subject: [PATCH] fix monarch clsid for isolated mode
+
+---
+ src/cascadia/Remoting/WindowManager.cpp | 19 +++++++++++++++----
+ 1 file changed, 15 insertions(+), 4 deletions(-)
+
+diff --git a/src/cascadia/Remoting/WindowManager.cpp b/src/cascadia/Remoting/WindowManager.cpp
+index aa9f67b0b..ee1b69d7e 100644
+--- a/src/cascadia/Remoting/WindowManager.cpp
++++ b/src/cascadia/Remoting/WindowManager.cpp
+@@ -38,11 +38,22 @@ namespace
+                 // {5456C4DB-557D-4A22-B043-B1577418E4AF}
+                 static constexpr GUID processRootHashedGuidBase = { 0x5456c4db, 0x557d, 0x4a22, { 0xb0, 0x43, 0xb1, 0x57, 0x74, 0x18, 0xe4, 0xaf } };
+ 
+-                // Make a temporary monarch CLSID based on the unpackaged install root
+-                std::filesystem::path modulePath{ wil::GetModuleFileNameW<std::wstring>(wil::GetModuleInstanceHandle()) };
+-                modulePath.remove_filename();
++                std::filesystem::path monarchBasePath;
+ 
+-                return Utils::CreateV5Uuid(processRootHashedGuidBase, std::as_bytes(std::span{ modulePath.native() }));
++                auto baseSettingsPathEnv = wil::TryGetEnvironmentVariableW<std::wstring>(L"WT_BASE_SETTINGS_PATH");
++                if (!baseSettingsPathEnv.empty())
++                {
++                    // Make a temporary monarch CLSID based on the base settings path
++                    monarchBasePath = std::filesystem::path{ baseSettingsPathEnv };
++                }
++                else
++                {
++                    // Make a temporary monarch CLSID based on the unpackaged install root
++                    monarchBasePath = std::filesystem::path{ wil::GetModuleFileNameW<std::wstring>(wil::GetModuleInstanceHandle()) };
++                    monarchBasePath.remove_filename();
++                }
++
++                return Utils::CreateV5Uuid(processRootHashedGuidBase, std::as_bytes(std::span{ monarchBasePath.native() }));
+             }();
+             return processRootHashedGuid;
+         }
+-- 
+2.39.1.windows.1
+
