@@ -62,7 +62,7 @@ jobs:
 
     steps:
       - name: Clone project
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Install code signing tools
         run: |
@@ -206,7 +206,7 @@ jobs:
           }
 
       - name: Upload packages
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: wt-release
           path: package/*
@@ -220,7 +220,7 @@ jobs:
 
     steps:
       - name: Download packages
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: wt-release
           path: package
