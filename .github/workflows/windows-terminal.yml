@@ -95,6 +95,7 @@ jobs:
           $OutputDir = Get-Item ".\bin"
           $XamlAppxPath = (Get-Item "src\cascadia\CascadiaPackage\AppPackages\*\Dependencies\$TargetPlatform\Microsoft.UI.Xaml*.appx").FullName
           $MsixPackage = Get-Item ".\src\cascadia\CascadiaPackage\AppPackages\CascadiaPackage_*_${TargetPlatform}_Test\CascadiaPackage_*_${TargetPlatform}.msix"
+          $AppxSymbols = Get-Item ".\src\cascadia\CascadiaPackage\AppPackages\CascadiaPackage_*_${TargetPlatform}_Test\CascadiaPackage_*_${TargetPlatform}.appxsym"
           & .\build\scripts\New-UnpackagedTerminalDistribution.ps1 -TerminalAppX $MsixPackage -XamlAppX $XamlAppxPath -Destination $OutputDir.FullName
           Get-ChildItem -Path $OutputDir Microsoft.WindowsTerminal_*.zip | ForEach-Object { 
             Expand-Archive -Path $_.FullName -DestinationPath $_.Directory -Force; Remove-Item $_
@@ -103,9 +104,11 @@ jobs:
           Copy-Item ".\res\fonts\*.ttf" -Destination $TerminalAppPath
           Move-Item -Path $TerminalAppPath -Destination "$OutputDir\${PackageName}"
           Compress-Archive "$OutputDir\${PackageName}\*" -DestinationPath "C:\workspace\${PackageName}.zip" -CompressionLevel Optimal
+          Expand-Archive -Path $AppxSymbols -Destination "$OutputDir\${PackageName}-symbols"
+          Compress-Archive "$OutputDir\${PackageName}-symbols\*" -DestinationPath "C:\workspace\${PackageName}-symbols.zip" -CompressionLevel Optimal
 
       - name: Upload Windows Terminal package
         uses: actions/upload-artifact@v4
         with:
           name: WindowsTerminal-${{ inputs.version }}-${{ matrix.arch }}
-          path: C:\workspace\WindowsTerminal-${{ inputs.version }}-${{ matrix.arch }}.zip
+          path: C:\workspace\WindowsTerminal-${{ inputs.version }}-${{ matrix.arch }}*.zip
