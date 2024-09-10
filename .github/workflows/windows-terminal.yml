@@ -108,7 +108,7 @@ jobs:
           Compress-Archive "$OutputDir\${PackageName}-symbols\*" -DestinationPath "C:\workspace\${PackageName}-symbols.zip" -CompressionLevel Optimal
 
       - name: Upload Windows Terminal package
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4.3.6
         with:
           name: WindowsTerminal-${{ inputs.version }}-${{ matrix.arch }}
           path: C:\workspace\WindowsTerminal-${{ inputs.version }}-${{ matrix.arch }}*.zip
