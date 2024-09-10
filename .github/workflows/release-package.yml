@@ -206,7 +206,7 @@ jobs:
           }
 
       - name: Upload packages
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4.3.6
         with:
           name: wt-release
           path: package/*
