@@ -217,6 +217,8 @@ jobs:
     needs: [preflight, package]
     environment: ${{ needs.preflight.outputs.package-env }}
     if: ${{ fromJSON(inputs.skip-publish) == false }}
+    permissions:
+      id-token: write
 
     steps:
       - name: Download packages
@@ -225,6 +227,12 @@ jobs:
           name: wt-release
           path: package
 
+      - name: NuGet login (OIDC)
+        id: nuget-login
+        uses: NuGet/login@v1
+        with:
+          user: ${{ secrets.NUGET_BOT_USERNAME }}
+
       - name: Publish to nuget.org
         shell: pwsh
         run: |
@@ -232,7 +240,7 @@ jobs:
           $NugetPackage = (Get-Item ./package/*.nupkg) | Resolve-Path -Relative
           $PushArgs = @(
             'nuget', 'push', "$NugetPackage",
-            '--api-key', '${{ secrets.NUGET_API_KEY }}',
+            '--api-key', '${{ steps.nuget-login.outputs.NUGET_API_KEY }}',
             '--source', 'https://api.nuget.org/v3/index.json',
             '--skip-duplicate', '--no-symbols'
           )
