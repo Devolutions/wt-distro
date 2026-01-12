@@ -219,6 +219,7 @@ jobs:
     if: ${{ fromJSON(inputs.skip-publish) == false }}
     permissions:
       id-token: write
+      contents: write
 
     steps:
       - name: Download packages
