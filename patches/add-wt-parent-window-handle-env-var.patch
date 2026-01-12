@@ -12,7 +12,7 @@ diff --git a/src/cascadia/WindowsTerminal/IslandWindow.cpp b/src/cascadia/Window
 index 9bea05acf..f9e824cb6 100644
 --- a/src/cascadia/WindowsTerminal/IslandWindow.cpp
 +++ b/src/cascadia/WindowsTerminal/IslandWindow.cpp
-@@ -85,6 +85,19 @@ HWND IslandWindow::GetInteropHandle() const
+@@ -100,6 +100,19 @@ HWND IslandWindow::GetInteropHandle() const
      return _interopWindowHandle;
  }
  
@@ -32,7 +32,7 @@ index 9bea05acf..f9e824cb6 100644
  // Method Description:
  // - Create the actual window that we'll use for the application.
  // Arguments:
-@@ -119,15 +132,27 @@ void IslandWindow::MakeWindow() noexcept
+@@ -134,15 +147,27 @@ void IslandWindow::MakeWindow() noexcept
      // but it works just fine when the window is in the TOPMOST group. But if
      // you enable it always, activating the window will remove our DWM frame
      // entirely. Weird.

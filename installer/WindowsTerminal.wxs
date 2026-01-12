@@ -17,10 +17,10 @@
 				<File Source="$(var.WTDir)\TerminalThemeHelpers.dll"></File>
 				<File Source="$(var.WTDir)\elevate-shim.exe"></File>
 				<File Source="$(var.WTDir)\Microsoft.Terminal.Control.dll"></File>
-				<File Source="$(var.WTDir)\Microsoft.Terminal.Remoting.dll"></File>
-				<File Source="$(var.WTDir)\Microsoft.Terminal.Remoting.winmd"></File>
 				<File Source="$(var.WTDir)\Microsoft.Terminal.Settings.Editor.dll"></File>
 				<File Source="$(var.WTDir)\Microsoft.Terminal.Settings.Model.dll"></File>
+				<File Source="$(var.WTDir)\Microsoft.Terminal.UI.dll"></File>
+				<File Source="$(var.WTDir)\Microsoft.Terminal.UI.Markdown.dll"></File>
 				<File Source="$(var.WTDir)\Microsoft.UI.Xaml.dll"></File>
 				<File Source="$(var.WTDir)\defaults.json"></File>
 				<File Source="$(var.WTDir)\resources.pri"></File>
@@ -56,9 +56,38 @@
 				<File Source="$(var.WTDir)\ProfileIcons\{9acb9455-ca41-5af7-950f-6bca1bc9722f}.scale-200.png"></File>
 				<File Source="$(var.WTDir)\ProfileIcons\{b453ae62-4e3d-5e58-b989-0a998ec441b8}.scale-100.png"></File>
 				<File Source="$(var.WTDir)\ProfileIcons\{b453ae62-4e3d-5e58-b989-0a998ec441b8}.scale-200.png"></File>
+				<File Source="$(var.WTDir)\ProfileIcons\vs-cmd.scale-100.png"></File>
+				<File Source="$(var.WTDir)\ProfileIcons\vs-cmd.scale-150.png"></File>
+				<File Source="$(var.WTDir)\ProfileIcons\vs-cmd.scale-200.png"></File>
+				<File Source="$(var.WTDir)\ProfileIcons\vs-powershell.scale-100.png"></File>
+				<File Source="$(var.WTDir)\ProfileIcons\vs-powershell.scale-150.png"></File>
+				<File Source="$(var.WTDir)\ProfileIcons\vs-powershell.scale-200.png"></File>
+				<File Source="$(var.WTDir)\ProfileIcons\vs-pwsh.scale-100.png"></File>
+				<File Source="$(var.WTDir)\ProfileIcons\vs-pwsh.scale-150.png"></File>
+				<File Source="$(var.WTDir)\ProfileIcons\vs-pwsh.scale-200.png"></File>
 			</Component>
 			<Component Guid="8442a923-b2c4-4ecc-be07-c21e3b5270cb" Directory="UIXAMLASSETSDIR">
 				<File Source="$(var.WTDir)\Microsoft.UI.Xaml\Assets\NoiseAsset_256X256_PNG.png"></File>
+			</Component>
+			<Component Guid="a1b2c3d4-e5f6-7890-abcd-ef1234567890" Directory="IMAGESDIR">
+				<File Source="$(var.WTDir)\Images\SplashScreen.scale-100.png"></File>
+				<File Source="$(var.WTDir)\Images\SplashScreen.scale-100_contrast-black.png"></File>
+				<File Source="$(var.WTDir)\Images\SplashScreen.scale-100_contrast-white.png"></File>
+				<File Source="$(var.WTDir)\Images\SplashScreen.scale-125.png"></File>
+				<File Source="$(var.WTDir)\Images\SplashScreen.scale-125_contrast-black.png"></File>
+				<File Source="$(var.WTDir)\Images\SplashScreen.scale-125_contrast-white.png"></File>
+				<File Source="$(var.WTDir)\Images\SplashScreen.scale-150.png"></File>
+				<File Source="$(var.WTDir)\Images\SplashScreen.scale-150_contrast-black.png"></File>
+				<File Source="$(var.WTDir)\Images\SplashScreen.scale-150_contrast-white.png"></File>
+				<File Source="$(var.WTDir)\Images\SplashScreen.scale-200.png"></File>
+				<File Source="$(var.WTDir)\Images\SplashScreen.scale-200_contrast-black.png"></File>
+				<File Source="$(var.WTDir)\Images\SplashScreen.scale-200_contrast-white.png"></File>
+				<File Source="$(var.WTDir)\Images\SplashScreen.scale-400.png"></File>
+				<File Source="$(var.WTDir)\Images\SplashScreen.scale-400_contrast-black.png"></File>
+				<File Source="$(var.WTDir)\Images\SplashScreen.scale-400_contrast-white.png"></File>
+				<File Source="$(var.WTDir)\Images\terminal.ico"></File>
+				<File Source="$(var.WTDir)\Images\terminal_contrast-black.ico"></File>
+				<File Source="$(var.WTDir)\Images\terminal_contrast-white.ico"></File>
 			</Component>
 		</ComponentGroup>
 	</Fragment>

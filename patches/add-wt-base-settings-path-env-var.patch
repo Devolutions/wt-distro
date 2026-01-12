@@ -12,7 +12,7 @@ diff --git a/src/cascadia/TerminalSettingsModel/FileUtils.cpp b/src/cascadia/Ter
 index ce219a6e0..09ac20fd8 100644
 --- a/src/cascadia/TerminalSettingsModel/FileUtils.cpp
 +++ b/src/cascadia/TerminalSettingsModel/FileUtils.cpp
-@@ -61,6 +61,16 @@ namespace winrt::Microsoft::Terminal::Settings::Model
+@@ -54,6 +54,16 @@ namespace winrt::Microsoft::Terminal::Settings::Model
  
              return parentDirectoryForSettingsFile;
          }();

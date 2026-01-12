@@ -28,7 +28,6 @@ $VersionFiles = @{
     "TerminalConnection.dll" = "src\cascadia\TerminalConnection\TerminalConnection.vcxproj";
 
     "Microsoft.Terminal.Control.dll" = "src\cascadia\TerminalControl\dll\TerminalControl.vcxproj";
-    "Microsoft.Terminal.Remoting.dll" = "src\cascadia\Remoting\dll\Microsoft.Terminal.Remoting.vcxproj";
     "Microsoft.Terminal.Settings.Editor.dll" = "src\cascadia\TerminalSettingsEditor\Microsoft.Terminal.Settings.Editor.vcxproj";
     "Microsoft.Terminal.Settings.Model.dll" = "src\cascadia\TerminalSettingsModel\dll\Microsoft.Terminal.Settings.Model.vcxproj";
 }
