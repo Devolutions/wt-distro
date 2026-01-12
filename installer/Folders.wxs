@@ -5,6 +5,7 @@
 			<Directory Id="VENDORDIR" Name="Devolutions">
 				<Directory Id="INSTALLDIR" Name="Windows Terminal" >
 					<Directory Id="PROFILEICONSDIR" Name="ProfileIcons" />
+					<Directory Id="IMAGESDIR" Name="Images" />
 					<Directory Id="UIXAMLDIR" Name="Microsoft.UI.Xaml">
 						<Directory Id="UIXAMLASSETSDIR" Name="Assets"/>
 					</Directory>
