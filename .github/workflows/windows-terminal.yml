@@ -26,10 +26,10 @@ jobs:
 
     steps:
       - name: Clone project
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Clone Windows Terminal ${{ inputs.git_ref }}
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: microsoft/terminal
           ref: ${{ inputs.git_ref }}
@@ -108,7 +108,7 @@ jobs:
           Compress-Archive "$OutputDir\${PackageName}-symbols\*" -DestinationPath "C:\workspace\${PackageName}-symbols.zip" -CompressionLevel Optimal
 
       - name: Upload Windows Terminal package
-        uses: actions/upload-artifact@v4.3.6
+        uses: actions/upload-artifact@v7
         with:
           name: WindowsTerminal-${{ inputs.version }}-${{ matrix.arch }}
           path: C:\workspace\WindowsTerminal-${{ inputs.version }}-${{ matrix.arch }}*.zip
